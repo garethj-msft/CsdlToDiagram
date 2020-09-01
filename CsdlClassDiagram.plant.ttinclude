@@ -12,8 +12,9 @@
 <#+
 private IEdmModel model;
 private string theNamespace;
+private string theFilename;
 
-public void EmitPlantDiagram(string csdl)
+public void EmitPlantDiagram(string csdl, string filename)
 {
 	this.model = CsdlReader.Parse(XElement.Parse(csdl).CreateReader());
 	if (this.model == null)
@@ -22,10 +23,11 @@ public void EmitPlantDiagram(string csdl)
 	}
 
 	this.theNamespace = this.model.DeclaredNamespaces.First();
+	this.theFilename = filename;
 #>
 @startuml
 
-title API Entity Diagram
+title API Entity Diagram for namespace <#= this.theNamespace #> in <#= this.theFilename #>
 
 
 <#+
