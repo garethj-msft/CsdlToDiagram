@@ -39,7 +39,7 @@ title API Entity Diagram
 		this.EmitInheritance(entity);
 		this.WriteLine("");
 
-		// TODO: Add Bound functions and actions in the third vertical bar e.g. | login(user,pass)
+		// TODO: Add Bound functions and actions in the third vertical bar 
 	}
 
 	foreach (IEdmComplexType complex in model.SchemaElements.OfType<IEdmComplexType>())
@@ -83,25 +83,33 @@ private string StripCollection(string name)
 	return name;
 }
 
+private string StripNamespace(string name)
+{
+	return name.Replace(this.theNamespace + ".", string.Empty);
+}
+
+
 private string GetTypeName(IEdmType theType)
 {
+	var typeName = string.Empty;
 	if (theType is IEdmComplexType complex)
 	{
-		return complex.Name;
+		typeName =  complex.Name;
 	}
 	else if (theType is IEdmEntityType entity)
 	{
-		return entity.Name;
+		typeName =  entity.Name;
 	}
 	else if (theType is IEdmCollectionType collection)
 	{
-		return GetTypeName(collection.ElementType);
+		typeName =  GetTypeName(collection.ElementType);
 	}
 	else if (theType is IEdmEnumType enumeration)
 	{
-		return enumeration.Name;
+		typeName =  enumeration.Name;
 	}
-	return string.Empty;
+
+	return StripNamespace(typeName);
 }
 
 private string GetTypeColor(IEdmType theType)
@@ -131,9 +139,11 @@ private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 	{
 		var typeName = this.GetTypeName(structProp.Type);
 		props.Add($"+{structProp.Name}: {typeName}");
+		string basePropType = StripCollection(typeName);
 	}
+	var isAbstract = theType.IsAbstract ? "abstract " : string.Empty;
 #>
-class <#=this.GetTypeName(theType)#> <<<#=prototype#>>> <#=this.GetTypeColor(theType)#> {
+<#= isAbstract #>class <#=this.GetTypeName(theType)#> <<<#=prototype#>>> <#=this.GetTypeColor(theType)#> {
 <#+ foreach ( var prop in props) { WriteLine(prop); }#>
 }
 <#+
@@ -174,8 +184,8 @@ class <#=this.model.EntityContainer.Name#> <<entityContainer>> #LightPink {
 private void EmitEnumType(IEdmEnumType theType)
 {
 #>
-class <#=this.GetTypeName(theType)#> <<enum>> #GoldenRod {
-<#+ foreach (IEdmEnumMember member in theType.Members) { WriteLine($"+{member.Name}"); }#>
+enum <#=this.GetTypeName(theType)#> <<enum>> #GoldenRod {
+<#+ foreach (IEdmEnumMember member in theType.Members) { WriteLine($"{member.Name}"); }#>
 }
 <#+
 }
