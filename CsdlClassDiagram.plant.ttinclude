@@ -85,6 +85,18 @@ private string StripCollection(string name)
 	return name;
 }
 
+private string ConvertCollection(string name)
+{
+	const string collectionPrefix = "Collection(";
+	const string collectionPrefixRender = "Collection[";
+	if (name.Contains(collectionPrefix))
+	{
+		name = name.Replace(collectionPrefix, collectionPrefixRender);
+		name = name.Substring(0, name.Length -1) + "]";
+	}
+	return name;
+}
+
 private string StripNamespace(string name)
 {
 	return name.Replace(this.theNamespace + ".", string.Empty);
@@ -127,10 +139,19 @@ private string GetTypeColor(IEdmType theType)
 	return string.Empty;
 }
 
+private IEdmType GetFundamentalType(IEdmType theType)
+{
+	if (theType is IEdmCollectionType collection)
+	{
+		theType =  collection.ElementType.Definition;
+	}
+	return theType;
+}
 
 private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 {
 	List<string> props = new List<string>();
+	List<string> complexUsages = new List<string>();
 	if (theType is IEdmEntityType)
 	{
 		// Add fake id property because everythign is derived from Graph's 'Entity' base type which would clutter the diagram.
@@ -140,8 +161,14 @@ private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 	foreach (IEdmStructuralProperty structProp in theType.DeclaredProperties.OfType<IEdmStructuralProperty>())
 	{
 		var typeName = this.GetTypeName(structProp.Type);
-		props.Add($"+{structProp.Name}: {typeName}");
-		string basePropType = StripCollection(typeName);
+		props.Add($"+{structProp.Name}: {ConvertCollection(typeName)}");
+		IEdmType propFundamental = GetFundamentalType(structProp.Type.Definition);
+		if (propFundamental.TypeKind == EdmTypeKind.Complex ||
+			propFundamental.TypeKind == EdmTypeKind.Enum)
+		{
+			string basePropType = StripCollection(typeName);
+			complexUsages.Add($"{this.GetTypeName(theType)} +--> {basePropType}: {structProp.Name}");
+		}
 	}
 	var isAbstract = theType.IsAbstract ? "abstract " : string.Empty;
 #>
@@ -149,6 +176,7 @@ private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 <#+ foreach ( var prop in props) { WriteLine(prop); }#>
 }
 <#+
+	foreach ( var usage in complexUsages) { WriteLine(usage); }
 }
 
 private void EmitEntityContainer()
@@ -221,7 +249,7 @@ private void EmitNavigationProperties(IEdmEntityType entity)
 		string navType = navProp.ContainsTarget ? "*" : string.Empty;
 		string navCardinality = collectionProp ? "0..*" :  "0..1";
 #>
-<#=GetTypeName(entity)#> <#=navType#>-- "<#=navCardinality#>" <#=GetTypeName(entityTarget)#>: <#=navProp.Name#> 
+<#=GetTypeName(entity)#> <#=navType#>--> "<#=navCardinality#>" <#=GetTypeName(entityTarget)#>: <#=navProp.Name#> 
 <#+
 	}
 }
