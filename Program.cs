@@ -29,7 +29,7 @@ namespace CsdlToDiagram
             else if (args[0].Equals("-p", StringComparison.OrdinalIgnoreCase))
             {
                 var convertor = new PlantConvertor();
-                convertor.EmitPlantDiagram(csdl, csdlFile);
+                convertor.EmitPlantDiagram(csdl, Path.GetFileName(csdlFile));
                 Console.WriteLine(convertor.GetText());
             }
             else
