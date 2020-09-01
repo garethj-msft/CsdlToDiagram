@@ -2,6 +2,9 @@
 using System.ComponentModel.Design;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace CsdlToDiagram
 {
@@ -19,6 +22,13 @@ namespace CsdlToDiagram
 
             var csdlFile = args[1];
             string csdl = File.ReadAllText(csdlFile);
+            var root = XElement.Parse(csdl);
+            if (root.Name.LocalName.Equals("schema", StringComparison.OrdinalIgnoreCase))
+            {
+                // This is an unwrapped CSDL file - user needs to top and tail it with standard EDMX nodes for the CSDL reader.
+                Console.WriteLine("CSDL file is missing standard Edmx and Edmx:DataServices wrapper nodes.");
+                return;
+            }
 
             if (args[0].Equals("-y", StringComparison.OrdinalIgnoreCase))
             {
