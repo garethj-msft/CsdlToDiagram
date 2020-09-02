@@ -148,6 +148,18 @@ private string StripCollection(string name)
 	return name;
 }
 
+private string ConvertCollection(string name)
+{
+	const string collectionPrefix = "Collection(";
+	const string collectionPrefixRender = "Collection[";
+	if (name.Contains(collectionPrefix))
+	{
+		name = name.Replace(collectionPrefix, collectionPrefixRender);
+		name = name.Substring(0, name.Length -1) + "]";
+	}
+	return name;
+}
+
 private string StripNamespace(string name)
 {
 	return name.Replace(this.theNamespace + ".", string.Empty);
@@ -190,10 +202,19 @@ private string GetTypeColor(IEdmType theType)
 	return string.Empty;
 }
 
+private IEdmType GetFundamentalType(IEdmType theType)
+{
+	if (theType is IEdmCollectionType collection)
+	{
+		theType =  collection.ElementType.Definition;
+	}
+	return theType;
+}
 
 private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 {
 	List<string> props = new List<string>();
+	List<string> complexUsages = new List<string>();
 	if (theType is IEdmEntityType)
 	{
 		// Add fake id property because everythign is derived from Graph's 'Entity' base type which would clutter the diagram.
@@ -203,8 +224,14 @@ private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 	foreach (IEdmStructuralProperty structProp in theType.DeclaredProperties.OfType<IEdmStructuralProperty>())
 	{
 		var typeName = this.GetTypeName(structProp.Type);
-		props.Add($"+{structProp.Name}: {typeName}");
-		string basePropType = StripCollection(typeName);
+		props.Add($"+{structProp.Name}: {ConvertCollection(typeName)}");
+		IEdmType propFundamental = GetFundamentalType(structProp.Type.Definition);
+		if (propFundamental.TypeKind == EdmTypeKind.Complex ||
+			propFundamental.TypeKind == EdmTypeKind.Enum)
+		{
+			string basePropType = StripCollection(typeName);
+			complexUsages.Add($"{this.GetTypeName(theType)} +--> {basePropType}: {structProp.Name}");
+		}
 	}
 	var isAbstract = theType.IsAbstract ? "abstract " : string.Empty;
 
@@ -212,77 +239,78 @@ private void EmitStructuralType(IEdmStructuredType theType, string prototype)
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(isAbstract));
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("class ");
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(this.GetTypeName(theType)));
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" <<");
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(prototype));
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(">> ");
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(this.GetTypeColor(theType)));
 
         
         #line default
         #line hidden
         
-        #line 148 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 175 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" {\r\n");
 
         
         #line default
         #line hidden
         
-        #line 149 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
  foreach ( var prop in props) { WriteLine(prop); }
         
         #line default
         #line hidden
         
-        #line 149 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("}\r\n");
 
         
         #line default
         #line hidden
         
-        #line 151 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 178 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
+	foreach ( var usage in complexUsages) { WriteLine(usage); }
 }
 
 private void EmitEntityContainer()
@@ -302,49 +330,49 @@ private void EmitEntityContainer()
         #line default
         #line hidden
         
-        #line 167 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 195 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(this.model.EntityContainer.Name));
 
         
         #line default
         #line hidden
         
-        #line 167 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 195 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" .. \"1..1\" ");
 
         
         #line default
         #line hidden
         
-        #line 167 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 195 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(singletonTypeName));
 
         
         #line default
         #line hidden
         
-        #line 167 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 195 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(": ");
 
         
         #line default
         #line hidden
         
-        #line 167 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 195 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(singleton.Name));
 
         
         #line default
         #line hidden
         
-        #line 167 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 195 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("\r\n");
 
         
         #line default
         #line hidden
         
-        #line 168 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 196 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
 	}
 
@@ -357,49 +385,49 @@ this.Write("\r\n");
         #line default
         #line hidden
         
-        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 204 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(this.model.EntityContainer.Name));
 
         
         #line default
         #line hidden
         
-        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 204 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" .. \"0..*\" ");
 
         
         #line default
         #line hidden
         
-        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 204 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(StripCollection(entitySetTypeName)));
 
         
         #line default
         #line hidden
         
-        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 204 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(": ");
 
         
         #line default
         #line hidden
         
-        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 204 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(entitySet.Name));
 
         
         #line default
         #line hidden
         
-        #line 176 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 204 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("\r\n");
 
         
         #line default
         #line hidden
         
-        #line 177 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 205 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
 	}
 
@@ -407,41 +435,41 @@ this.Write("\r\n");
         #line default
         #line hidden
         
-        #line 179 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 207 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("class ");
 
         
         #line default
         #line hidden
         
-        #line 180 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 208 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(this.model.EntityContainer.Name));
 
         
         #line default
         #line hidden
         
-        #line 180 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 208 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" <<entityContainer>> #LightPink {\r\n");
 
         
         #line default
         #line hidden
         
-        #line 181 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 209 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
  foreach ( var member in members) { WriteLine(member); }
         
         #line default
         #line hidden
         
-        #line 181 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 209 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("}\r\n");
 
         
         #line default
         #line hidden
         
-        #line 183 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 211 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
 }
 
@@ -452,41 +480,41 @@ private void EmitEnumType(IEdmEnumType theType)
         #line default
         #line hidden
         
-        #line 188 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 216 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("enum ");
 
         
         #line default
         #line hidden
         
-        #line 189 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 217 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(this.GetTypeName(theType)));
 
         
         #line default
         #line hidden
         
-        #line 189 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 217 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" <<enum>> #GoldenRod {\r\n");
 
         
         #line default
         #line hidden
         
-        #line 190 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 218 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
  foreach (IEdmEnumMember member in theType.Members) { WriteLine($"{member.Name}"); }
         
         #line default
         #line hidden
         
-        #line 190 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 218 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("}\r\n");
 
         
         #line default
         #line hidden
         
-        #line 192 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 220 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
 }
 
@@ -499,35 +527,35 @@ private void EmitInheritance(IEdmStructuredType theType)
         #line default
         #line hidden
         
-        #line 200 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 228 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(GetTypeName(theType.BaseType as IEdmStructuredType)));
 
         
         #line default
         #line hidden
         
-        #line 200 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 228 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" <|-- ");
 
         
         #line default
         #line hidden
         
-        #line 200 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 228 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(GetTypeName(theType)));
 
         
         #line default
         #line hidden
         
-        #line 200 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 228 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("\r\n");
 
         
         #line default
         #line hidden
         
-        #line 201 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 229 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
 	}
 }
@@ -555,77 +583,77 @@ private void EmitNavigationProperties(IEdmEntityType entity)
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(GetTypeName(entity)));
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" ");
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(navType));
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
-this.Write("-- \"");
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+this.Write("--> \"");
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(navCardinality));
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write("\" ");
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(GetTypeName(entityTarget)));
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(": ");
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(this.ToStringHelper.ToStringWithCulture(navProp.Name));
 
         
         #line default
         #line hidden
         
-        #line 224 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 252 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 this.Write(" \r\n");
 
         
         #line default
         #line hidden
         
-        #line 225 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
+        #line 253 "C:\Repos\CsdlToDiagram\CsdlClassDiagram.plant.ttinclude"
 
 	}
 }
