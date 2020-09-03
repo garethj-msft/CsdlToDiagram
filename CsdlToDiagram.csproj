@@ -16,10 +16,6 @@
       <LastGenOutput>CsdlToPlant.cs</LastGenOutput>
       <Generator>TextTemplatingFilePreprocessor</Generator>
     </None>
-    <None Update="CsdlToYuml.ttpre">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>CsdlToYuml.cs</LastGenOutput>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -31,13 +27,6 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CsdlToPlant.ttpre</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="CsdlToYuml.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>CsdlToYuml.ttpre</DependentUpon>
     </Compile>
   </ItemGroup>
 
