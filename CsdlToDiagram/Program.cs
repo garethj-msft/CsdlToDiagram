@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using CsdlToPlant;
 
 namespace CsdlToDiagram
 {
@@ -31,8 +32,8 @@ namespace CsdlToDiagram
             }
 
             var convertor = new PlantConverter();
-            convertor.EmitPlantDiagram(csdl, Path.GetFileName(csdlFile));
-            Console.WriteLine(convertor.GetText());
+            string plant = convertor.EmitPlantDiagram(csdl, Path.GetFileName(csdlFile));
+            Console.WriteLine(plant);
         }
     }
 }

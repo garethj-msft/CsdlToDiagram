@@ -6,28 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.OData.Edm" Version="7.7.0" />
     <PackageReference Include="System.CodeDom" Version="4.7.0" />
     <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="CsdlToPlant.ttpre">
-      <LastGenOutput>CsdlToPlant.cs</LastGenOutput>
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-    </None>
+    <ProjectReference Include="..\CsdlToPlant\CsdlToPlant.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="CsdlToPlant.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>CsdlToPlant.ttpre</DependentUpon>
-    </Compile>
   </ItemGroup>
 
 </Project>
