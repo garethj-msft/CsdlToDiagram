@@ -17,7 +17,7 @@
             }
         }
 
-        private class Generator : CsdlToPlant
+        private class Generator : CsdlToPlantGenerator
         {
             public string GetText()
             {

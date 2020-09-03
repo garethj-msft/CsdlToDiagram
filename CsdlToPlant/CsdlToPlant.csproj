@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="CsdlToPlant.ttpre">
-      <LastGenOutput>CsdlToPlant.cs</LastGenOutput>
+    <None Update="CsdlToPlantGenerator.ttpre">
+      <LastGenOutput>CsdlToPlantGenerator.cs</LastGenOutput>
       <Generator>TextTemplatingFilePreprocessor</Generator>
     </None>
   </ItemGroup>
@@ -22,10 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="CsdlToPlant.cs">
+    <Compile Update="CsdlToPlantGenerator.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>CsdlToPlant.ttpre</DependentUpon>
+      <DependentUpon>CsdlToPlantGenerator.ttpre</DependentUpon>
     </Compile>
   </ItemGroup>
 

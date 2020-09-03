@@ -22,9 +22,9 @@ namespace CsdlToPlant
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Repos\CsdlToDiagram\CsdlToPlant\CsdlToPlant.ttpre"
+    #line 1 "C:\Repos\CsdlToDiagram\CsdlToPlant\CsdlToPlantGenerator.ttpre"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "16.0.0.0")]
-    public partial class CsdlToPlant : CsdlToPlantBase
+    public partial class CsdlToPlantGenerator : CsdlToPlantGeneratorBase
     {
 #line hidden
         /// <summary>
@@ -670,7 +670,7 @@ this.Write(" \r\n");
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "16.0.0.0")]
-    public class CsdlToPlantBase
+    public class CsdlToPlantGeneratorBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;
