@@ -1,7 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.5.0</Version>
+    <Authors>Gareth Jones</Authors>
+    <Company>Microsoft</Company>
+    <Product>Csdl Diagrams</Product>
+    <PackageId>CsdlDiagrams.Net</PackageId>
+    <Description>.Net library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
+    <Copyright>(C) 2020 Microsoft Corporation.</Copyright>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/garethj-msft/CsdlToDiagram</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +25,10 @@
     <None Update="CsdlToPlantGenerator.ttpre">
       <LastGenOutput>CsdlToPlantGenerator.cs</LastGenOutput>
       <Generator>TextTemplatingFilePreprocessor</Generator>
+    </None>
+    <None Include="..\License.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
     </None>
   </ItemGroup>
 
