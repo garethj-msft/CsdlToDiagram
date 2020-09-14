@@ -219,7 +219,13 @@ private void EmitStructuralType(
 	{
 		foreach (var boundOperation in list)
 		{
-			WriteLine($"+{boundOperation.Name}()");
+			IEdmFunction function = boundOperation as IEdmFunction;
+			string returnType = string.Empty;
+			if (function != null)
+			{
+				returnType = $": {this.GetTypeName(function.ReturnType)}";
+			}
+			WriteLine($"+{boundOperation.Name}(){returnType}");
 		}
 	}
 #>
