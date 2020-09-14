@@ -26,7 +26,7 @@ public void EmitPlantDiagram(string csdl, string filename)
 	this.theFilename = filename;
 #>
 @startuml
-
+skinparam classAttributeIconSize 0
 title API Entity Diagram for namespace <#= this.theNamespace #> in <#= this.theFilename #>
 
 
@@ -38,7 +38,6 @@ title API Entity Diagram for namespace <#= this.theNamespace #> in <#= this.theF
 	{
 		this.EmitStructuralType(entity, "entity");
 		this.EmitNavigationProperties(entity);
-		this.EmitInheritance(entity);
 		this.WriteLine("");
 
 		// TODO: Add Bound functions and actions in the third vertical bar 
@@ -47,7 +46,6 @@ title API Entity Diagram for namespace <#= this.theNamespace #> in <#= this.theF
 	foreach (IEdmComplexType complex in model.SchemaElements.OfType<IEdmComplexType>())
 	{
 		this.EmitStructuralType(complex, "complexType");
-		this.EmitInheritance(complex);
 		this.WriteLine("");
 	}
 
@@ -81,18 +79,6 @@ private string StripCollection(string name)
 	{
 		name = name.Replace(collectionPrefix, string.Empty);
 		name = name.Substring(0, name.Length -1);
-	}
-	return name;
-}
-
-private string ConvertCollection(string name)
-{
-	const string collectionPrefix = "Collection(";
-	const string collectionPrefixRender = "Collection[";
-	if (name.Contains(collectionPrefix))
-	{
-		name = name.Replace(collectionPrefix, collectionPrefixRender);
-		name = name.Substring(0, name.Length -1) + "]";
 	}
 	return name;
 }
@@ -152,27 +138,58 @@ private void EmitStructuralType(IEdmStructuredType theType, string prototype)
 {
 	List<string> props = new List<string>();
 	List<string> complexUsages = new List<string>();
-	if (theType is IEdmEntityType)
+	if (theType is IEdmEntityType && theType.BaseType == null)
 	{
-		// Add fake id property because everythign is derived from Graph's 'Entity' base type which would clutter the diagram.
+		// Add fake id property because everything is originally derived from Graph's 'Entity' base type which would clutter the diagram.
 		props.Add("+id: String");
 	}
 
 	foreach (IEdmStructuralProperty structProp in theType.DeclaredProperties.OfType<IEdmStructuralProperty>())
 	{
 		var typeName = this.GetTypeName(structProp.Type);
-		props.Add($"+{structProp.Name}: {ConvertCollection(typeName)}");
+
+		// Prefix properties with parentheses in them to avoid them being interpreted as methods.
+		string prefix = string.Empty;
+		bool collection = false;
+
+		if (typeName.Contains("("))
+		{
+			prefix = "{field} ";
+			collection = true;
+		}
+
+		string optionality = string.Empty;
+		string cardinalityMin = "1";
+		string cardinalityMax = collection ? "*" : "1";
+		if (structProp.Type.IsNullable)
+		{
+			// Cardinality only specified on property names if they are optional.
+			cardinalityMin = "0";
+			optionality = $" [{cardinalityMin}..{cardinalityMax}]";
+		}
+
+		props.Add($"{prefix}+{structProp.Name}: {typeName}{optionality}");
 		IEdmType propFundamental = GetFundamentalType(structProp.Type.Definition);
 		if (propFundamental.TypeKind == EdmTypeKind.Complex ||
 			propFundamental.TypeKind == EdmTypeKind.Enum)
 		{
 			string basePropType = StripCollection(typeName);
-			complexUsages.Add($"{this.GetTypeName(theType)} +--> {basePropType}: {structProp.Name}");
+			complexUsages.Add($@"{this.GetTypeName(theType)} +--> ""[{cardinalityMin}..{cardinalityMax}]"" {basePropType}: {structProp.Name}");
 		}
 	}
 	var isAbstract = theType.IsAbstract ? "abstract " : string.Empty;
+	if (prototype.Equals("entity") && !theType.IsAbstract)
+	{
+		prototype = $"(N,white){prototype}";
+	}
+
+	string extends = string.Empty;
+	if (theType.BaseType != null)
+	{
+		extends = $" extends {GetTypeName(theType.BaseType as IEdmStructuredType)}";
+	}
 #>
-<#= isAbstract #>class <#=this.GetTypeName(theType)#> <<<#=prototype#>>> <#=this.GetTypeColor(theType)#> {
+<#= isAbstract #>class <#=this.GetTypeName(theType)#> <<<#=prototype#>>> <#=this.GetTypeColor(theType)#><#=extends#> {
 <#+ foreach ( var prop in props) { WriteLine(prop); }#>
 }
 <#+
@@ -205,7 +222,7 @@ private void EmitEntityContainer()
 <#+
 	}
 #>
-class <#=this.model.EntityContainer.Name#> <<entityContainer>> #LightPink {
+class <#=this.model.EntityContainer.Name#> <<(S,white)entityContainer>> #LightPink {
 <#+ foreach ( var member in members) { WriteLine(member); }#>
 }
 <#+
@@ -218,16 +235,6 @@ enum <#=this.GetTypeName(theType)#> <<enum>> #GoldenRod {
 <#+ foreach (IEdmEnumMember member in theType.Members) { WriteLine($"{member.Name}"); }#>
 }
 <#+
-}
-
-private void EmitInheritance(IEdmStructuredType theType)
-{
-	if (theType.BaseType != null)
-	{
-#>
-<#=GetTypeName(theType.BaseType as IEdmStructuredType)#> <|-- <#=GetTypeName(theType)#>
-<#+
-	}
 }
 
 private void EmitNavigationProperties(IEdmEntityType entity)

@@ -2,14 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Authors>Gareth Jones</Authors>
     <Company>Microsoft</Company>
     <Product>Csdl Diagrams</Product>
     <PackageId>CsdlDiagrams.Net</PackageId>
-    <Description>.Net library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
+    <Description>.Net standard 2.0 library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
     <Copyright>(C) 2020 Microsoft Corporation.</Copyright>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
+    <Title>CsdlDiagrams.Net</Title>
     <PackageProjectUrl>https://github.com/garethj-msft/CsdlToDiagram</PackageProjectUrl>
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
