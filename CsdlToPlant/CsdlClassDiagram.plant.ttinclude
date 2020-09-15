@@ -13,10 +13,14 @@
 private IEdmModel model;
 private string theNamespace;
 private string theFilename;
+private Dictionary<string, IEnumerable<string>> notes = new Dictionary<string, IEnumerable<string>>();
+private Dictionary<IEdmStructuredType, IList<IEdmOperation>> boundOperations = new Dictionary<IEdmStructuredType, IList<IEdmOperation>>();
 
 public void EmitPlantDiagram(string csdl, string filename)
 {
-	this.model = CsdlReader.Parse(XElement.Parse(csdl).CreateReader());
+	XElement parsed = XElement.Parse(csdl);
+	this.ConstructNotesLookaside(parsed);
+	this.model = CsdlReader.Parse(parsed.CreateReader());
 	if (this.model == null)
 	{
 		this.WriteLine("Failed to parse the CSDL file.");
@@ -29,28 +33,10 @@ public void EmitPlantDiagram(string csdl, string filename)
 skinparam classAttributeIconSize 0
 title API Entity Diagram for namespace <#= this.theNamespace #> in <#= this.theFilename #>
 
-
 <#+
 	this.EmitEntityContainer();
 	this.WriteLine("");
-
-	// Collate the bound actions and functions against their bound elememts.
-	var boundOperations = new Dictionary<IEdmStructuredType, IList<IEdmOperation>>();
-	foreach (IEdmOperation operation in model.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound))
-	{
-		// By spec definition, first parameter is the binding parameter.
-		var bindingParameterType = (operation?.Parameters?.FirstOrDefault()?.Type?.Definition) as IEdmStructuredType;
-		if (bindingParameterType != null)
-		{
-			if(!boundOperations.TryGetValue(bindingParameterType, out IList<IEdmOperation> list))
-			{
-				list = new List<IEdmOperation>();
-				boundOperations[bindingParameterType] = list;
-			}
-
-			list.Add(operation);
-		}
-	}
+	CollateBoundOperations();
 
 	foreach (IEdmEntityType entity in model.SchemaElements.OfType<IEdmEntityType>())
 	{
@@ -71,6 +57,48 @@ title API Entity Diagram for namespace <#= this.theNamespace #> in <#= this.theF
 		this.WriteLine("");
 	}
 
+	foreach (var note in this.notes)
+	{
+		this.EmitNote(note.Key, note.Value);
+	}
+}
+
+private void ConstructNotesLookaside(XElement root)
+{
+	var commentedEntities = from e in Enumerable.Repeat(root,1).DescendantsAndSelf()
+		where e.Name.LocalName == "EntityType" ||
+				e.Name.LocalName == "ComplexType" ||
+				e.Name.LocalName == "EnumType"
+		let comments = from c in e.DescendantNodes().OfType<XComment>()
+			where c.Value.Trim().StartsWith("Note:")
+			select c.Value
+		where comments.Any()
+		select new {Entity = e, Comments = comments};
+
+	foreach (var commentedEntity in commentedEntities)
+	{
+		this.notes[commentedEntity.Entity.Attributes().First(a => a.Name == "Name").Value] =
+			commentedEntity.Comments;	
+	}
+}
+
+private void CollateBoundOperations()
+{
+    // Collate the bound actions and functions against their bound elememts.
+	foreach (IEdmOperation operation in this.model.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound))
+	{
+		// By spec definition, first parameter is the binding parameter.
+		var bindingParameterType = (operation?.Parameters?.FirstOrDefault()?.Type?.Definition) as IEdmStructuredType;
+		if (bindingParameterType != null)
+		{
+			if(!this.boundOperations.TryGetValue(bindingParameterType, out IList<IEdmOperation> list))
+			{
+				list = new List<IEdmOperation>();
+				this.boundOperations[bindingParameterType] = list;
+			}
+			list.Add(operation);
+		}
+	}
 }
 
 private string GetTypeName(IEdmTypeReference theType)
@@ -301,5 +329,20 @@ private void EmitNavigationProperties(IEdmEntityType entity)
 <#=GetTypeName(entity)#> <#=navType#>--> "<#=navCardinality#>" <#=GetTypeName(entityTarget)#>: <#=navProp.Name#> 
 <#+
 	}
+}
+
+private void EmitNote(string noteTarget, IEnumerable<string> notes)
+{
+#>
+note top of <#=noteTarget#>
+<#+
+foreach (string note in notes)
+{
+	this.WriteLine(note);
+}
+#>
+end note
+
+<#+
 }
 #>
