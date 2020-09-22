@@ -42,7 +42,7 @@
             foreach (var entity in this.model.SchemaElements.OfType<IEdmEntityType>())
             {
                 this.EmitStructuralType(entity, "entity");
-                this.EmitNavigationProperties(entity, true);
+                this.EmitNavigationProperties(entity);
                 this.WriteLine("");
             }
 
@@ -76,28 +76,38 @@
                 props.Add("+id: String");
             }
 
-            foreach (var structProp in theType.DeclaredProperties.OfType<IEdmStructuralProperty>())
+            foreach (var property in theType.DeclaredProperties)
             {
-                var typeName = this.GetTypeName(structProp.Type);
+                var typeName = this.GetTypeName(property.Type);
 
                 // Prefix properties with parentheses in them to avoid them being interpreted as methods.
-                var isCollection = structProp.Type.Definition is IEdmCollectionType;
+                var isCollection = property.Type.Definition is IEdmCollectionType;
                 var prefix = isCollection ? "{field} " : string.Empty;
 
-                var optionality = CalculatePropertyCardinalityText(structProp, isCollection, out var cardinalityMin, out var cardinalityMax);
-                if (!string.IsNullOrEmpty(optionality))
+                var optionality = CalculatePropertyCardinalityText(property, isCollection, out var cardinalityMin, out var cardinalityMax);
+                if (!string.IsNullOrWhiteSpace(optionality))
                 {
                     optionality = $" [{optionality}]";
                 }
 
-                props.Add($"{prefix}+{structProp.Name}: {typeName}{optionality}");
-                IEdmType propFundamental = GetFundamentalType(structProp.Type.Definition);
+                var navType = string.Empty;
+                var exposure = "+";
+                if (property is IEdmNavigationProperty navProp)
+                {
+                    navType = navProp.ContainsTarget ? "*" : navType;
+                    // Nav props don't show up by default.
+                    exposure = "-";
+                }
+
+                props.Add($"{prefix}{exposure}{property.Name}: {typeName}{optionality}{navType}");
+
+                IEdmType propFundamental = GetFundamentalType(property.Type.Definition);
                 if (propFundamental.TypeKind == EdmTypeKind.Complex ||
                     propFundamental.TypeKind == EdmTypeKind.Enum)
                 {
                     string basePropType = StripCollection(typeName);
                     complexUsages.Add(
-                        $@"{this.GetTypeName(theType)} +--> ""[{cardinalityMin}..{cardinalityMax}]"" {basePropType}: {structProp.Name}");
+                        $@"{this.GetTypeName(theType)} +--> ""[{cardinalityMin}..{cardinalityMax}]"" {basePropType}: {property.Name}");
                 }
             }
 
@@ -119,11 +129,6 @@
             foreach (var prop in props)
             {
                 this.WriteLine(prop);
-            }
-
-            if (theType is IEdmEntityType entityType)
-            {
-                this.EmitNavigationProperties(entityType, false);
             }
 
             if (this.boundOperations.TryGetValue(theType, out IList<IEdmOperation> list))
@@ -159,7 +164,7 @@
             cardinalityMax = isCollection ? "*" : "1";
             if (property.Type.IsNullable)
             {
-                // Cardinality only specified on property names if they are optional.
+                // Optionality only specified on property names if they are optional.
                 cardinalityMin = "0";
                 optionality = $"{cardinalityMin}..{cardinalityMax}";
             }
@@ -206,7 +211,7 @@
             this.WriteLine("end note");
         }
 
-        private void EmitNavigationProperties(IEdmEntityType entity, bool asRelationship)
+        private void EmitNavigationProperties(IEdmEntityType entity)
         {
             foreach (IEdmNavigationProperty navProp in entity.DeclaredProperties.OfType<IEdmNavigationProperty>())
             {
@@ -220,21 +225,10 @@
                     entityTarget = collectionTarget.ElementType.Definition as IEdmEntityType;
                 }
 
-                // Prefix properties with parentheses in them to avoid them being interpreted as methods.
-                var prefix = isCollection ? "{field} " : string.Empty;
-
                 var navType = navProp.ContainsTarget ? "*" : string.Empty;
-                var navCardinality = CalculatePropertyCardinalityText(navProp, isCollection, out var cardinalityMin, out var cardinalityMax);
-                if (asRelationship)
-                {
-                    this.WriteLine(
-                        $@"{this.GetTypeName(entity)} {navType}--> ""{navCardinality}"" {this.GetTypeName(entityTarget)}: {navProp.Name}");
-                }
-                else
-                {
-                    this.WriteLine(
-                        $"{prefix}-{navProp.Name}: {this.GetTypeName(entityTarget)} [{navCardinality}]{navType}");
-                }
+                CalculatePropertyCardinalityText(navProp, isCollection, out var cardinalityMin, out var cardinalityMax);
+                this.WriteLine(
+                    $@"{this.GetTypeName(entity)} {navType}--> ""{cardinalityMin}..{cardinalityMax}"" {this.GetTypeName(entityTarget)}: {navProp.Name}");
             }
         }
 
