@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.OData.Edm" Version="7.7.1" />
-    <PackageReference Include="System.CodeDom" Version="4.7.0" />
     <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>
 
