@@ -1,15 +1,21 @@
-﻿namespace CsdlToPlant
+﻿using System;
+using System.Linq;
+
+namespace CsdlToPlant
 {
     public class PlantConverter
     {
+        private const string GenerationErrorsMessage = "There were errors generating the PlantUML file.";
         private readonly Generator generator = new Generator();
 
-        public string EmitPlantDiagram(string csdlContent, string csdlFilename)
+        public string EmitPlantDiagram(string csdlContent, string csdlFilename, GeneratorOptions options = null)
         {
-            this.generator.EmitPlantDiagram(csdlContent, csdlFilename);
-            if (this.generator.Errors.HasErrors)
+            options = options ?? GeneratorOptions.DefaultGeneratorOptions;
+
+            this.generator.EmitPlantDiagram(csdlContent, csdlFilename, options);
+            if (this.generator.Errors.Any(e => !e.IsWarning))
             {
-                return "There were errors generating the PlantUML file.";
+                return GenerationErrorsMessage;
             }
             else
             {

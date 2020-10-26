@@ -1,4 +1,6 @@
-﻿namespace CsdlToPlant
+﻿using System.Collections;
+
+namespace CsdlToPlant
 {
     using System;
     using System.Collections.Generic;
@@ -19,8 +21,11 @@
         private readonly Dictionary<IEdmStructuredType, IList<IEdmOperation>> boundOperations =
             new Dictionary<IEdmStructuredType, IList<IEdmOperation>>();
 
-        public void EmitPlantDiagram(string csdl, string filename)
+        private GeneratorOptions options;
+
+        public void EmitPlantDiagram(string csdl, string filename, GeneratorOptions options)
         {
+            this.options = options;
             var parsed = XElement.Parse(csdl);
             this.ConstructNotesLookaside(parsed);
             this.model = CsdlReader.Parse(parsed.CreateReader());
@@ -39,20 +44,20 @@
             this.WriteLine("");
             this.CollateBoundOperations();
 
-            foreach (var entity in this.model.SchemaElements.OfType<IEdmEntityType>())
+            foreach (var entity in this.FilterSkipped(this.model.SchemaElements.OfType<IEdmEntityType>()))
             {
                 this.EmitStructuralType(entity, "entity");
                 this.EmitNavigationProperties(entity);
                 this.WriteLine("");
             }
 
-            foreach (var complex in this.model.SchemaElements.OfType<IEdmComplexType>())
+            foreach (var complex in this.FilterSkipped(this.model.SchemaElements.OfType<IEdmComplexType>()))
             {
                 this.EmitStructuralType(complex, "complexType");
                 this.WriteLine("");
             }
 
-            foreach (var enumeration in this.model.SchemaElements.OfType<IEdmEnumType>())
+            foreach (var enumeration in this.FilterSkipped(this.model.SchemaElements.OfType<IEdmEnumType>()))
             {
                 this.EmitEnumType(enumeration);
                 this.WriteLine("");
@@ -64,16 +69,30 @@
             }
         }
 
+        /// <summary>
+        /// Return elements that are not in the options SkipList.
+        /// </summary>
+        private IEnumerable<T> FilterSkipped<T>(IEnumerable<T> unfilteredList)
+            where T: IEdmNamedElement
+        {
+            return unfilteredList.Where(t => !this.options.SkipList.Contains(t.Name, StringComparer.OrdinalIgnoreCase));
+        }
+
         private void EmitStructuralType(
             IEdmStructuredType theType,
             string prototype)
         {
             var props = new List<string>();
             var complexUsages = new List<string>();
-            if (theType is IEdmEntityType && theType.BaseType == null)
+            if (this.options.SkipList.Contains("entity", StringComparer.OrdinalIgnoreCase))
             {
-                // Add fake id property because everything is originally derived from Graph's 'Entity' base type which would clutter the diagram.
-                props.Add("+id: String");
+                if (theType is IEdmEntityType && 
+                        (((IEdmNamedElement)(theType.BaseType)).Name.Equals("entity", StringComparison.OrdinalIgnoreCase) ||
+                         theType.BaseType == null))
+                {
+                    // Add fake id property because everything is originally derived from Graph's 'Entity' base type which would clutter the diagram.
+                    props.Add("+id: String");
+                }
             }
 
             foreach (var property in theType.DeclaredProperties)
@@ -118,7 +137,7 @@
             }
 
             var extends = string.Empty;
-            if (theType.BaseType != null)
+            if (theType.BaseType != null && !this.options.SkipList.Contains(((IEdmNamedElement)theType.BaseType).Name, StringComparer.OrdinalIgnoreCase))
             {
                 extends = $" extends {this.GetTypeName(theType.BaseType)}";
             }
@@ -217,6 +236,12 @@
             {
                 
                 var target = navProp.Type.Definition;
+                if (target is IEdmNamedElement namedTarget &&
+                    this.options.SkipList.Contains(namedTarget.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 var entityTarget = target as IEdmEntityType;
                 bool isCollection = false;
                 if (target is IEdmCollectionType collectionTarget)
