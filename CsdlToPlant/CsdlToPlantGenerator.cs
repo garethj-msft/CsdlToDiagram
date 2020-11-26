@@ -85,8 +85,8 @@
             if (this.options.SkipList.Contains("entity", StringComparer.OrdinalIgnoreCase))
             {
                 if (theType is IEdmEntityType && 
-                        (((IEdmNamedElement)(theType.BaseType)).Name.Equals("entity", StringComparison.OrdinalIgnoreCase) ||
-                         theType.BaseType == null))
+                        (theType.BaseType == null ||
+                         ((IEdmNamedElement)(theType.BaseType)).Name.Equals("entity", StringComparison.OrdinalIgnoreCase)))
                 {
                     // Add fake id property because everything is originally derived from Graph's 'Entity' base type which would clutter the diagram.
                     props.Add("+id: String");
@@ -205,6 +205,15 @@
             {
                 this.noteMap[commentedEntity.Entity.Attributes().First(a => a.Name == "Name").Value] =
                     commentedEntity.Comments;
+            }
+
+            var rootComments = from c in Enumerable.Repeat(root, 1).DescendantNodes().OfType<XComment>()
+                where c.Value.Trim().StartsWith("Note:", StringComparison.OrdinalIgnoreCase)
+                select c.Value;
+
+            if (rootComments.Any())
+            {
+                this.noteMap[string.Empty] = rootComments;
             }
         }
 
