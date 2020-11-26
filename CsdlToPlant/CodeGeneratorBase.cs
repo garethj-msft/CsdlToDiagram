@@ -8,7 +8,7 @@
     /// Base class for generating well-formatted code.
     /// Borrowed from T4's generated base class.
     /// </summary>
-    public class CodeGeneratorBase
+    internal class CodeGeneratorBase
     {
         private bool endsWithNewline;
 

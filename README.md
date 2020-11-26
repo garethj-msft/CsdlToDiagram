@@ -1,9 +1,10 @@
 # CsdlToDiagram
-Simple T4-powered console app to generate a PlantUml diagram from an OData CSDL file.
+Simple console app to generate a PlantUml diagram from an OData CSDL file.
+Available on nuget as a tool: `CsdlToDiagram`
 
 ## Generate a PlantUML diagram to the console.
 ```
-CsdlToDiagram.exe <csdlFile>
+dotnet CsdlToDiagram <csdlFile>
 ```
 
 ## Library CsdlToPlant

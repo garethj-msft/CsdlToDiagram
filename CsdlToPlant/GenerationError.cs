@@ -1,9 +1,5 @@
 ﻿namespace CsdlToPlant
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-
     /// <summary>
     /// POCO for errors during generation.
     /// </summary>

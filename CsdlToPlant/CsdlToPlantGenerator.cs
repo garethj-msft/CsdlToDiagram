@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace CsdlToPlant
+﻿namespace CsdlToPlant
 {
     using System;
     using System.Collections.Generic;
@@ -9,7 +7,7 @@ namespace CsdlToPlant
     using Microsoft.OData.Edm;
     using Microsoft.OData.Edm.Csdl;
 
-    public class CsdlToPlantGenerator : CodeGeneratorBase
+    internal class CsdlToPlantGenerator : CodeGeneratorBase
     {
         private IEdmModel model;
         private string theNamespace;
