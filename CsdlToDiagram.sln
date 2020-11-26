@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsdlToPlant.Tests", "CsdlToPlant.Tests\CsdlToPlant.Tests.csproj", "{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{F30F8D61-4ACB-4973-91D1-A3F855BF78E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F30F8D61-4ACB-4973-91D1-A3F855BF78E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F30F8D61-4ACB-4973-91D1-A3F855BF78E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

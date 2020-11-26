@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>0.10.0</Version>
+    <Version>0.11.0</Version>
     <Authors>Gareth Jones</Authors>
     <Company>Microsoft</Company>
     <Product>Csdl Diagrams</Product>
@@ -14,6 +14,8 @@
     <PackageProjectUrl>https://github.com/garethj-msft/CsdlToDiagram</PackageProjectUrl>
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath Condition="'$(Configuration)' == 'Release'">\CsdlToDiagram</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
