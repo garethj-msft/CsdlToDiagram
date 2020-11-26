@@ -4,7 +4,7 @@ Available on nuget as a tool: `CsdlToDiagram`
 
 ## Generate a PlantUML diagram to the console.
 ```
-dotnet CsdlToDiagram <csdlFile>
+CsdlToDiagram <csdlFile>
 ```
 
 ## Library CsdlToPlant
