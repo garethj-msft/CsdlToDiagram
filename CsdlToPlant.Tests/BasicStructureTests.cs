@@ -1,49 +1,63 @@
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using static CsdlToPlant.Tests.CsdlTestHelper;
 
 namespace CsdlToPlant.Tests
 {
     [TestClass]
     public class BasicStructureTests
     {
-        private const string CsdlHeader = @"<?xml version=""1.0"" encoding=""utf-8""?>
-            <edmx:Edmx Version=""4.0""
-                xmlns:edmx=""http://docs.oasis-open.org/odata/ns/edmx""
-                xmlns:edm=""http://docs.oasis-open.org/odata/ns/edm""
-                xmlns:ags=""http://aggregator.microsoft.com/internal""
-                xmlns=""http://docs.oasis-open.org/odata/ns/edm"">
-                <edmx:Reference Uri=""https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml"">
-                    <edmx:Include Alias=""Core"" Namespace=""Org.OData.Core.V1"" />
-                </edmx:Reference>
-                <edmx:DataServices>";
-
-        private const string CsdlFooter = @"</edmx:DataServices></edmx:Edmx>";
-
-        private const string CsdlStartSchema = @"<edm:Schema Namespace=""{0}"">";
-
-        private const string CsdlEndSchema = @"</edm:Schema>";
-
         [TestMethod]
         public void EntityProjectsClass()
         {
-            string csdl = this.FormCsdl("myNamespace", CreateEntity(@"entityName"));
-
+            string csdl = FormCsdl("myNamespace", CreateEntity(@"entityName"));
             var convertor = new PlantConverter();
+
             string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
 
-            StringAssert.Contains(plant, $@"class entityName");
+            StringAssert.Matches(plant, new Regex(@"^class entityName", RegexOptions.Multiline));
         }
 
-        private static string CreateEntity(string entityName, string content = null)
+        [TestMethod]
+        public void AbstractEntityProjectsAbstractClass()
         {
-            content ??= string.Empty;
+            string csdl = FormCsdl("myNamespace", CreateEntity(@"entityName", new[] {new KeyValuePair<string, string>("Abstract", "true")}));
+            var convertor = new PlantConverter();
 
-            return $@"<EntityType Name=""{entityName}"">{content}</EntityType>";
+            string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
+
+            StringAssert.Matches(plant, new Regex(@"^abstract class entityName", RegexOptions.Multiline));
         }
 
-        private string FormCsdl(string theNamespace, string content)
+        [TestMethod]
+        public void AnnotatedEntityProjectsClassAndNote()
         {
-            return $"{CsdlHeader}{String.Format(CsdlStartSchema, theNamespace)}{content}{CsdlEndSchema}{CsdlFooter}";
+            string csdl = FormCsdl("myNamespace", CreateEntity(@"entityName", @"<!-- Note: First note. -->"));
+            var convertor = new PlantConverter();
+
+            string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
+
+            StringAssert.Matches(plant, new Regex(@"^class entityName", RegexOptions.Multiline));
+            StringAssert.That.MatchesLines(plant, @"^note top of entityName", @"Note: First note.", @"end note\r\n$");
+            StringAssert.That.ContainsCountOf(plant, 1, "note top of");
+            StringAssert.That.ContainsCountOf(plant, 1, "First note.");
         }
+
+        [TestMethod]
+        public void RootCommentProjectsFloatingNote()
+        {
+            string csdl = FormCsdl("myNamespace", 
+                CreateEntity(@"entityName") +
+                @"<!-- Note: Root note. -->");
+            var convertor = new PlantConverter();
+
+            string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
+
+            StringAssert.Contains(plant, @"class entityName");
+            StringAssert.That.MatchesLines(plant, @"^note", @"Note: Root note.", @"end note\r\n$");
+        }
+
     }
 }

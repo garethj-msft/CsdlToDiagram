@@ -191,13 +191,18 @@
 
         private void ConstructNotesLookaside(XElement root)
         {
+            IEnumerable<string> extractComments(IEnumerable<XNode> childNodes)
+            {
+                return from c in childNodes.OfType<XComment>()
+                    where c.Value.Trim().StartsWith("Note:", StringComparison.OrdinalIgnoreCase)
+                    select c.Value.Trim();
+            }
+
             var commentedEntities = from e in Enumerable.Repeat(root, 1).DescendantsAndSelf()
                 where e.Name.LocalName == "EntityType" ||
                       e.Name.LocalName == "ComplexType" ||
                       e.Name.LocalName == "EnumType"
-                let comments = from c in e.DescendantNodes().OfType<XComment>()
-                    where c.Value.Trim().StartsWith("Note:", StringComparison.OrdinalIgnoreCase)
-                    select c.Value
+                let comments = extractComments(e.DescendantNodes())
                 where comments.Any()
                 select new {Entity = e, Comments = comments};
 
@@ -207,9 +212,11 @@
                     commentedEntity.Comments;
             }
 
-            var rootComments = from c in Enumerable.Repeat(root, 1).DescendantNodes().OfType<XComment>()
-                where c.Value.Trim().StartsWith("Note:", StringComparison.OrdinalIgnoreCase)
-                select c.Value;
+            var rootComments = from e in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+                where e.Name.LocalName == "Schema"
+                let comments = extractComments(e.Nodes())
+                from comment in comments
+                select comment;
 
             if (rootComments.Any())
             {
@@ -229,7 +236,8 @@
 
         private void EmitNote(string noteTarget, IEnumerable<string> notes)
         {
-            this.WriteLine($"note top of {noteTarget}");
+            this.WriteLine(string.IsNullOrWhiteSpace(noteTarget) ? "note" : $"note top of {noteTarget}");
+
             foreach (string note in notes)
             {
                 this.WriteLine(note);
