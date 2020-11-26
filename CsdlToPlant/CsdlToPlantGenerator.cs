@@ -236,7 +236,7 @@
 
         private void EmitNote(string noteTarget, IEnumerable<string> notes)
         {
-            this.WriteLine(string.IsNullOrWhiteSpace(noteTarget) ? "note" : $"note top of {noteTarget}");
+            this.WriteLine(string.IsNullOrWhiteSpace(noteTarget) ? "note as RootNoteR1" : $"note top of {noteTarget}");
 
             foreach (string note in notes)
             {

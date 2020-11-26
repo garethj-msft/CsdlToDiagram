@@ -56,7 +56,7 @@ namespace CsdlToPlant.Tests
             string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
 
             StringAssert.Contains(plant, @"class entityName");
-            StringAssert.That.MatchesLines(plant, @"^note", @"Note: Root note.", @"end note\r\n$");
+            StringAssert.That.MatchesLines(plant, @"^note as RootNoteR1", @"Note: Root note.", @"end note\r\n$");
         }
 
     }
