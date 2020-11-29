@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Xml.Linq;
 using CsdlToPlant;
@@ -30,6 +31,10 @@ namespace CsdlToDiagram
             var convertor = new PlantConverter();
             string plant = convertor.EmitPlantDiagram(csdl, Path.GetFileName(csdlFile));
             Console.WriteLine(plant);
+            if (Debugger.IsAttached)
+            {
+                Console.ReadLine();
+            }
         }
     }
 }
