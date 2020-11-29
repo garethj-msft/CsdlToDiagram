@@ -9,6 +9,7 @@
 
     internal class CsdlToPlantGenerator : CodeGeneratorBase
     {
+        private const string CollectionPrefix = "Collection(";
         private IEdmModel model;
         private string theFilename;
         private bool usesNamespaces;
@@ -122,6 +123,12 @@
             foreach (var property in theType.DeclaredProperties)
             {
                 var typeName = this.GetTypeName(property.Type);
+                var fullTypeName = typeName;
+                if (GetNamespace(typeName).Equals(GetNamespace(this.GetTypeName(theType)),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    typeName = GetSimpleName(typeName);
+                }
 
                 // Prefix properties with parentheses in them to avoid them being interpreted as methods.
                 var isCollection = property.Type.Definition is IEdmCollectionType;
@@ -148,7 +155,7 @@
                 if (propFundamental.TypeKind == EdmTypeKind.Complex ||
                     propFundamental.TypeKind == EdmTypeKind.Enum)
                 {
-                    string basePropType = StripCollection(typeName);
+                    string basePropType = StripCollection(fullTypeName);
                     complexUsages.Add(
                         $@"{this.GetTypeName(theType)} +--> ""[{cardinalityMin}..{cardinalityMax}]"" {basePropType}: {property.Name}");
                 }
@@ -356,21 +363,54 @@
 
         private static string StripCollection(string name)
         {
-            const string collectionPrefix = "Collection(";
-            if (name.Contains(collectionPrefix))
+            if (name.Contains(CollectionPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                name = name.Replace(collectionPrefix, string.Empty);
+                name = name.Replace(CollectionPrefix, string.Empty);
                 name = name.Substring(0, name.Length - 1);
             }
 
             return name;
         }
 
+        private static bool IsCollection(string name)
+        {
+            return name.Contains(CollectionPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
         private string StripNamespace(string name)
         {
             if (name == null) return null;
 
-            return this.usesNamespaces ? name : name.Split('.')[^1];
+            return this.usesNamespaces ? name : GetSimpleName(name);
+        }
+
+        private static string GetNamespace(string name)
+        {
+            if (name == null)
+            {
+                return null;
+            }
+            else
+            {
+                name = StripCollection(name);
+                return name.Contains('.') ? string.Join('.', name.Split('.')[..^2]) : string.Empty;
+            }
+        }
+
+        private static string GetSimpleName(string name)
+        {
+            if (name == null)
+            {
+                return null;
+            }
+            else
+            {
+                bool isColl = IsCollection(name);
+                name = StripCollection(name);
+                name = name.Contains('.') ? name.Split('.')[^1] : name;
+                name = isColl ? $"{CollectionPrefix}{name})" : name;
+                return name;
+            }
         }
 
         private string GetTypeName(IEdmTypeReference theType)
