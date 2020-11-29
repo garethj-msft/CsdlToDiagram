@@ -12,6 +12,7 @@
         private IEdmModel model;
         private string theNamespace;
         private string theFilename;
+        private bool usesNamespaces;
 
         private readonly Dictionary<string, IEnumerable<string>>
             noteMap = new Dictionary<string, IEnumerable<string>>();
@@ -32,6 +33,7 @@
                 this.WriteLine("Failed to parse the CSDL file.");
             }
 
+            this.CalculateNamespaceUsage();
             this.theNamespace = this.model.DeclaredNamespaces.First();
             this.theFilename = filename;
             this.WriteLine(@"@startuml");
@@ -65,6 +67,15 @@
             {
                 this.EmitNote(note.Key, note.Value);
             }
+        }
+
+        private void CalculateNamespaceUsage()
+        {
+            int count = this.model.DeclaredNamespaces.Count();
+            string firstNamespace = this.model.DeclaredNamespaces.First();
+            this.usesNamespaces = count > 1 ||
+                                  !firstNamespace.Equals("microsoft.graph", StringComparison.OrdinalIgnoreCase) &&
+                                  firstNamespace.StartsWith("microsoft.graph.", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -280,11 +291,12 @@
             }
 
             var members = new List<string>();
+            string ecName = this.StripNamespace(this.model.EntityContainer.FullName());
             foreach (var singleton in this.model.EntityContainer.Elements.OfType<IEdmSingleton>())
             {
                 var singletonTypeName = this.GetTypeName(singleton.Type);
                 members.Add($"+{singleton.Name}: {singletonTypeName}");
-                this.WriteLine($@"{this.model.EntityContainer.Name} .. ""1..1"" {singletonTypeName}: {singleton.Name}");
+                this.WriteLine($@"{ecName} .. ""1..1"" {singletonTypeName}: {singleton.Name}");
             }
 
             foreach (var entitySet in this.model.EntityContainer.Elements.OfType<IEdmEntitySet>())
@@ -292,10 +304,10 @@
                 var entitySetTypeName = this.GetTypeName(entitySet.EntityType());
                 members.Add($"+{entitySet.Name}: {entitySetTypeName}");
                 this.WriteLine(
-                    $@"{this.model.EntityContainer.Name} .. ""0..*"" {StripCollection(entitySetTypeName)}: {entitySet.Name}");
+                    $@"{ecName} .. ""0..*"" {StripCollection(entitySetTypeName)}: {entitySet.Name}");
             }
 
-            this.WriteLine($"class {this.model.EntityContainer.Name} <<(S,white)entityContainer>> #LightPink {{");
+            this.WriteLine($"class {ecName} <<(S,white)entityContainer>> #LightPink {{");
             foreach (var member in members)
             {
                 this.WriteLine(member);
@@ -323,18 +335,6 @@
             }
         }
 
-        private string GetTypeName(IEdmTypeReference theType)
-        {
-            var name = theType.ShortQualifiedName() ?? theType.FullName();
-
-            if (name.Contains(this.theNamespace))
-            {
-                name = name.Replace(this.theNamespace + ".", string.Empty);
-            }
-
-            return name;
-        }
-
         private static string StripCollection(string name)
         {
             const string collectionPrefix = "Collection(";
@@ -349,7 +349,17 @@
 
         private string StripNamespace(string name)
         {
-            return name.Replace(this.theNamespace + ".", string.Empty);
+            if (name == null) return null;
+
+            return this.usesNamespaces ? name : name.Split('.')[^1];
+        }
+
+        private string GetTypeName(IEdmTypeReference theType)
+        {
+            var name = theType.ShortQualifiedName() ?? theType.FullName();
+
+            name = this.StripNamespace(name);
+            return name;
         }
 
         private string GetTypeName(IEdmType theType)
@@ -358,16 +368,16 @@
             switch (theType)
             {
                 case IEdmComplexType complex:
-                    typeName = complex.Name;
+                    typeName = complex.FullTypeName();
                     break;
                 case IEdmEntityType entity:
-                    typeName = entity.Name;
+                    typeName = entity.FullTypeName();
                     break;
                 case IEdmCollectionType collection:
                     typeName = this.GetTypeName(collection.ElementType);
                     break;
                 case IEdmEnumType enumeration:
-                    typeName = enumeration.Name;
+                    typeName = enumeration.FullTypeName();
                     break;
             }
 
