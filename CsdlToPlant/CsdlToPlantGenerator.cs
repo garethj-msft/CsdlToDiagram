@@ -10,12 +10,16 @@
     internal class CsdlToPlantGenerator : CodeGeneratorBase
     {
         private IEdmModel model;
-        private string theNamespace;
         private string theFilename;
         private bool usesNamespaces;
 
-        private readonly Dictionary<string, IEnumerable<string>>
-            noteMap = new Dictionary<string, IEnumerable<string>>();
+        /// <summary>
+        /// Dictionary of (namespace, name) to list of notes, sorted on the namespace.
+        /// </summary>
+        private readonly SortedDictionary<(string theNamespace, string theName), IEnumerable<string>>
+            noteMap = new SortedDictionary<(string theNamespace, string theName), IEnumerable<string>>();
+                // Comparer<(string theNamespace, string theName)>.Create((o1, o2) =>
+                    //StringComparer.OrdinalIgnoreCase.Compare(o1.theNamespace, o2.theNamespace)));
 
         private readonly Dictionary<IEdmStructuredType, IList<IEdmOperation>> boundOperations =
             new Dictionary<IEdmStructuredType, IList<IEdmOperation>>();
@@ -34,11 +38,10 @@
             }
 
             this.CalculateNamespaceUsage();
-            this.theNamespace = this.model.DeclaredNamespaces.First();
             this.theFilename = filename;
             this.WriteLine(@"@startuml");
             this.WriteLine(@"skinparam classAttributeIconSize 0");
-            this.WriteLine($@"title API Entity Diagram for namespace {this.theNamespace} in {this.theFilename}");
+            this.WriteLine($@"title API Entity Diagram for {this.theFilename}");
             this.WriteLine("");
             this.EmitEntityContainer();
             this.WriteLine("");
@@ -63,10 +66,22 @@
                 this.WriteLine("");
             }
 
+            string theNamespace = string.Empty;
             foreach (var note in this.noteMap)
             {
-                this.EmitNote(note.Key, note.Value);
+                if (!theNamespace.Equals(note.Key.theNamespace))
+                {
+                    if (theNamespace != string.Empty)
+                    {
+                        this.WriteLine("}");
+                    }
+
+                    theNamespace = note.Key.theNamespace;
+                    this.WriteLine($"namespace {theNamespace} {{");
+                }
+                this.EmitNote(note.Key.theName, note.Value);
             }
+            this.WriteLine("}");
         }
 
         private void CalculateNamespaceUsage()
@@ -209,29 +224,33 @@
                     select c.Value.Trim();
             }
 
-            var commentedEntities = from e in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+            var commentedEntities = from s in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+                where s.Name.LocalName == "Schema"
+                let n = s.Attributes().First(a => a.Name == "Namespace").Value
+                from e in Enumerable.Repeat(s, 1).DescendantsAndSelf()
                 where e.Name.LocalName == "EntityType" ||
                       e.Name.LocalName == "ComplexType" ||
                       e.Name.LocalName == "EnumType"
                 let comments = extractComments(e.DescendantNodes())
                 where comments.Any()
-                select new {Entity = e, Comments = comments};
+                select new {Namespace = n, Entity = e, Comments = comments};
 
             foreach (var commentedEntity in commentedEntities)
             {
-                this.noteMap[commentedEntity.Entity.Attributes().First(a => a.Name == "Name").Value] =
+                this.noteMap[(commentedEntity.Namespace, commentedEntity.Entity.Attributes().First(a => a.Name == "Name").Value)] =
                     commentedEntity.Comments;
             }
 
-            var rootComments = from e in Enumerable.Repeat(root, 1).DescendantsAndSelf()
-                where e.Name.LocalName == "Schema"
-                let comments = extractComments(e.Nodes())
+            var rootComments = from s in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+                where s.Name.LocalName == "Schema"
+                let n = s.Attributes().First(a => a.Name == "Namespace").Value
+                let comments = extractComments(s.Nodes())
                 from comment in comments
-                select comment;
+                select new {Namespace = n, Comments = comments};
 
-            if (rootComments.Any())
+            foreach (var rootComment in rootComments)
             {
-                this.noteMap[string.Empty] = rootComments;
+                this.noteMap[(rootComment.Namespace, string.Empty)] = rootComment.Comments;
             }
         }
 
