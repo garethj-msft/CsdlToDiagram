@@ -8,7 +8,7 @@ CsdlToDiagram <csdlFile>
 ```
 
 ## Library CsdlToPlant
-.Net Standard 2.0 library to create PlantUML text from a CSDL file.
+.Net Standard 2.1 library to create PlantUML text from a CSDL file.
 Available on nuget as CsdlDiagrams.Net.
 
 Usage:

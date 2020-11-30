@@ -9,12 +9,18 @@
 
     internal class CsdlToPlantGenerator : CodeGeneratorBase
     {
+        private const string CollectionPrefix = "Collection(";
         private IEdmModel model;
-        private string theNamespace;
         private string theFilename;
+        private bool usesNamespaces;
 
-        private readonly Dictionary<string, IEnumerable<string>>
-            noteMap = new Dictionary<string, IEnumerable<string>>();
+        /// <summary>
+        /// Dictionary of (namespace, name) to list of notes, sorted on the namespace.
+        /// </summary>
+        private readonly SortedDictionary<(string theNamespace, string theName), IEnumerable<string>>
+            noteMap = new SortedDictionary<(string theNamespace, string theName), IEnumerable<string>>();
+                // Comparer<(string theNamespace, string theName)>.Create((o1, o2) =>
+                    //StringComparer.OrdinalIgnoreCase.Compare(o1.theNamespace, o2.theNamespace)));
 
         private readonly Dictionary<IEdmStructuredType, IList<IEdmOperation>> boundOperations =
             new Dictionary<IEdmStructuredType, IList<IEdmOperation>>();
@@ -32,11 +38,11 @@
                 this.WriteLine("Failed to parse the CSDL file.");
             }
 
-            this.theNamespace = this.model.DeclaredNamespaces.First();
+            this.CalculateNamespaceUsage();
             this.theFilename = filename;
             this.WriteLine(@"@startuml");
             this.WriteLine(@"skinparam classAttributeIconSize 0");
-            this.WriteLine($@"title API Entity Diagram for namespace {this.theNamespace} in {this.theFilename}");
+            this.WriteLine($@"title API Entity Diagram for {this.theFilename}");
             this.WriteLine("");
             this.EmitEntityContainer();
             this.WriteLine("");
@@ -61,10 +67,31 @@
                 this.WriteLine("");
             }
 
+            string theNamespace = string.Empty;
             foreach (var note in this.noteMap)
             {
-                this.EmitNote(note.Key, note.Value);
+                if (!theNamespace.Equals(note.Key.theNamespace))
+                {
+                    if (theNamespace != string.Empty)
+                    {
+                        this.WriteLine("}");
+                    }
+
+                    theNamespace = note.Key.theNamespace;
+                    this.WriteLine($"namespace {theNamespace} {{");
+                }
+                this.EmitNote(note.Key.theName, note.Value);
             }
+            this.WriteLine("}");
+        }
+
+        private void CalculateNamespaceUsage()
+        {
+            int count = this.model.DeclaredNamespaces.Count();
+            string firstNamespace = this.model.DeclaredNamespaces.First();
+            this.usesNamespaces = count > 1 ||
+                                  !firstNamespace.Equals("microsoft.graph", StringComparison.OrdinalIgnoreCase) &&
+                                  firstNamespace.StartsWith("microsoft.graph.", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -96,6 +123,12 @@
             foreach (var property in theType.DeclaredProperties)
             {
                 var typeName = this.GetTypeName(property.Type);
+                var fullTypeName = typeName;
+                if (GetNamespace(typeName).Equals(GetNamespace(this.GetTypeName(theType)),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    typeName = GetSimpleName(typeName);
+                }
 
                 // Prefix properties with parentheses in them to avoid them being interpreted as methods.
                 var isCollection = property.Type.Definition is IEdmCollectionType;
@@ -122,7 +155,7 @@
                 if (propFundamental.TypeKind == EdmTypeKind.Complex ||
                     propFundamental.TypeKind == EdmTypeKind.Enum)
                 {
-                    string basePropType = StripCollection(typeName);
+                    string basePropType = StripCollection(fullTypeName);
                     complexUsages.Add(
                         $@"{this.GetTypeName(theType)} +--> ""[{cardinalityMin}..{cardinalityMax}]"" {basePropType}: {property.Name}");
                 }
@@ -198,29 +231,33 @@
                     select c.Value.Trim();
             }
 
-            var commentedEntities = from e in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+            var commentedEntities = from s in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+                where s.Name.LocalName == "Schema"
+                let n = s.Attributes().First(a => a.Name == "Namespace").Value
+                from e in Enumerable.Repeat(s, 1).DescendantsAndSelf()
                 where e.Name.LocalName == "EntityType" ||
                       e.Name.LocalName == "ComplexType" ||
                       e.Name.LocalName == "EnumType"
                 let comments = extractComments(e.DescendantNodes())
                 where comments.Any()
-                select new {Entity = e, Comments = comments};
+                select new {Namespace = n, Entity = e, Comments = comments};
 
             foreach (var commentedEntity in commentedEntities)
             {
-                this.noteMap[commentedEntity.Entity.Attributes().First(a => a.Name == "Name").Value] =
+                this.noteMap[(commentedEntity.Namespace, commentedEntity.Entity.Attributes().First(a => a.Name == "Name").Value)] =
                     commentedEntity.Comments;
             }
 
-            var rootComments = from e in Enumerable.Repeat(root, 1).DescendantsAndSelf()
-                where e.Name.LocalName == "Schema"
-                let comments = extractComments(e.Nodes())
+            var rootComments = from s in Enumerable.Repeat(root, 1).DescendantsAndSelf()
+                where s.Name.LocalName == "Schema"
+                let n = s.Attributes().First(a => a.Name == "Namespace").Value
+                let comments = extractComments(s.Nodes())
                 from comment in comments
-                select comment;
+                select new {Namespace = n, Comments = comments};
 
-            if (rootComments.Any())
+            foreach (var rootComment in rootComments)
             {
-                this.noteMap[string.Empty] = rootComments;
+                this.noteMap[(rootComment.Namespace, string.Empty)] = rootComment.Comments;
             }
         }
 
@@ -280,11 +317,12 @@
             }
 
             var members = new List<string>();
+            string ecName = this.StripNamespace(this.model.EntityContainer.FullName());
             foreach (var singleton in this.model.EntityContainer.Elements.OfType<IEdmSingleton>())
             {
                 var singletonTypeName = this.GetTypeName(singleton.Type);
                 members.Add($"+{singleton.Name}: {singletonTypeName}");
-                this.WriteLine($@"{this.model.EntityContainer.Name} .. ""1..1"" {singletonTypeName}: {singleton.Name}");
+                this.WriteLine($@"{ecName} .. ""1..1"" {singletonTypeName}: {singleton.Name}");
             }
 
             foreach (var entitySet in this.model.EntityContainer.Elements.OfType<IEdmEntitySet>())
@@ -292,10 +330,10 @@
                 var entitySetTypeName = this.GetTypeName(entitySet.EntityType());
                 members.Add($"+{entitySet.Name}: {entitySetTypeName}");
                 this.WriteLine(
-                    $@"{this.model.EntityContainer.Name} .. ""0..*"" {StripCollection(entitySetTypeName)}: {entitySet.Name}");
+                    $@"{ecName} .. ""0..*"" {StripCollection(entitySetTypeName)}: {entitySet.Name}");
             }
 
-            this.WriteLine($"class {this.model.EntityContainer.Name} <<(S,white)entityContainer>> #LightPink {{");
+            this.WriteLine($"class {ecName} <<(S,white)entityContainer>> #LightPink {{");
             foreach (var member in members)
             {
                 this.WriteLine(member);
@@ -323,33 +361,64 @@
             }
         }
 
-        private string GetTypeName(IEdmTypeReference theType)
-        {
-            var name = theType.ShortQualifiedName() ?? theType.FullName();
-
-            if (name.Contains(this.theNamespace))
-            {
-                name = name.Replace(this.theNamespace + ".", string.Empty);
-            }
-
-            return name;
-        }
-
         private static string StripCollection(string name)
         {
-            const string collectionPrefix = "Collection(";
-            if (name.Contains(collectionPrefix))
+            if (name.Contains(CollectionPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                name = name.Replace(collectionPrefix, string.Empty);
+                name = name.Replace(CollectionPrefix, string.Empty);
                 name = name.Substring(0, name.Length - 1);
             }
 
             return name;
         }
 
+        private static bool IsCollection(string name)
+        {
+            return name.Contains(CollectionPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
         private string StripNamespace(string name)
         {
-            return name.Replace(this.theNamespace + ".", string.Empty);
+            if (name == null) return null;
+
+            return this.usesNamespaces ? name : GetSimpleName(name);
+        }
+
+        private static string GetNamespace(string name)
+        {
+            if (name == null)
+            {
+                return null;
+            }
+            else
+            {
+                name = StripCollection(name);
+                return name.Contains('.') ? string.Join('.', name.Split('.')[..^2]) : string.Empty;
+            }
+        }
+
+        private static string GetSimpleName(string name)
+        {
+            if (name == null)
+            {
+                return null;
+            }
+            else
+            {
+                bool isColl = IsCollection(name);
+                name = StripCollection(name);
+                name = name.Contains('.') ? name.Split('.')[^1] : name;
+                name = isColl ? $"{CollectionPrefix}{name})" : name;
+                return name;
+            }
+        }
+
+        private string GetTypeName(IEdmTypeReference theType)
+        {
+            var name = theType.ShortQualifiedName() ?? theType.FullName();
+
+            name = this.StripNamespace(name);
+            return name;
         }
 
         private string GetTypeName(IEdmType theType)
@@ -358,16 +427,16 @@
             switch (theType)
             {
                 case IEdmComplexType complex:
-                    typeName = complex.Name;
+                    typeName = complex.FullTypeName();
                     break;
                 case IEdmEntityType entity:
-                    typeName = entity.Name;
+                    typeName = entity.FullTypeName();
                     break;
                 case IEdmCollectionType collection:
                     typeName = this.GetTypeName(collection.ElementType);
                     break;
                 case IEdmEnumType enumeration:
-                    typeName = enumeration.Name;
+                    typeName = enumeration.FullTypeName();
                     break;
             }
 
