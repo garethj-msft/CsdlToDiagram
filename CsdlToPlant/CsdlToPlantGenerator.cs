@@ -67,22 +67,7 @@
                 this.WriteLine("");
             }
 
-            string theNamespace = string.Empty;
-            foreach (var note in this.noteMap)
-            {
-                if (!theNamespace.Equals(note.Key.theNamespace))
-                {
-                    if (theNamespace != string.Empty)
-                    {
-                        this.WriteLine("}");
-                    }
-
-                    theNamespace = note.Key.theNamespace;
-                    this.WriteLine($"namespace {theNamespace} {{");
-                }
-                this.EmitNote(note.Key.theName, note.Value);
-            }
-            this.WriteLine("}");
+            this.EmitNotes();
         }
 
         private void CalculateNamespaceUsage()
@@ -271,6 +256,31 @@
             this.WriteLine("}");
         }
 
+        private void EmitNotes()
+        {
+            string theNamespace = string.Empty;
+            foreach (var note in this.noteMap)
+            {
+                if (this.usesNamespaces && !theNamespace.Equals(note.Key.theNamespace))
+                {
+                    if (theNamespace != string.Empty)
+                    {
+                        this.WriteLine("}");
+                    }
+
+                    theNamespace = note.Key.theNamespace;
+                    this.WriteLine($"namespace {theNamespace} {{");
+                }
+
+                this.EmitNote(note.Key.theName, note.Value);
+            }
+
+            if (this.usesNamespaces)
+            {
+                this.WriteLine("}");
+            }
+        }
+
         private void EmitNote(string noteTarget, IEnumerable<string> notes)
         {
             this.WriteLine(string.IsNullOrWhiteSpace(noteTarget) ? "note as RootNoteR1" : $"note top of {noteTarget}");
@@ -363,7 +373,7 @@
 
         private static string StripCollection(string name)
         {
-            if (name.Contains(CollectionPrefix, StringComparison.OrdinalIgnoreCase))
+            if (name.Contains(CollectionPrefix))
             {
                 name = name.Replace(CollectionPrefix, string.Empty);
                 name = name.Substring(0, name.Length - 1);
@@ -374,7 +384,7 @@
 
         private static bool IsCollection(string name)
         {
-            return name.Contains(CollectionPrefix, StringComparison.OrdinalIgnoreCase);
+            return name.Contains(CollectionPrefix);
         }
 
         private string StripNamespace(string name)
@@ -393,7 +403,7 @@
             else
             {
                 name = StripCollection(name);
-                return name.Contains('.') ? string.Join('.', name.Split('.')[..^2]) : string.Empty;
+                return name.Contains('.') ? string.Join(".", name.Split('.')[..^2]) : string.Empty;
             }
         }
 
