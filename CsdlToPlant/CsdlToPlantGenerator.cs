@@ -79,15 +79,6 @@
                                   firstNamespace.StartsWith("microsoft.graph.", StringComparison.OrdinalIgnoreCase);
         }
 
-        private void CalculateNamespaceUsage()
-        {
-            int count = this.model.DeclaredNamespaces.Count();
-            string firstNamespace = this.model.DeclaredNamespaces.First();
-            this.usesNamespaces = count > 1 ||
-                                  !firstNamespace.Equals("microsoft.graph", StringComparison.OrdinalIgnoreCase) &&
-                                  firstNamespace.StartsWith("microsoft.graph.", StringComparison.OrdinalIgnoreCase);
-        }
-
         /// <summary>
         /// Return elements that are not in the options SkipList.
         /// </summary>
@@ -388,6 +379,9 @@
                 name = name.Substring(0, name.Length - 1);
             }
 
+            return name;
+        }
+
         private string StripNamespace(string name)
         {
             if (name == null) return null;
@@ -398,13 +392,6 @@
         private static bool IsCollection(string name)
         {
             return name.Contains(CollectionPrefix);
-        }
-
-        private string StripNamespace(string name)
-        {
-            if (name == null) return null;
-
-            return this.usesNamespaces ? name : GetSimpleName(name);
         }
 
         private static string GetNamespace(string name)
