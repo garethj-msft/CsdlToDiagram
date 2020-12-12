@@ -6,6 +6,7 @@
     using System.Xml.Linq;
     using Microsoft.OData.Edm;
     using Microsoft.OData.Edm.Csdl;
+    using Microsoft.OData.Edm.Validation;
 
     internal class CsdlToPlantGenerator : CodeGeneratorBase
     {
@@ -300,6 +301,12 @@
                 var target = navProp.Type.Definition;
                 if (target is IEdmNamedElement namedTarget &&
                     this.options.SkipList.Contains(namedTarget.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                IEdmType targetElement = navProp.Type.Definition.AsElementType();
+                if (targetElement.Errors().Any(e => e.ErrorCode == EdmErrorCode.BadUnresolvedEntityType))
                 {
                     continue;
                 }
