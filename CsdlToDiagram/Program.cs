@@ -29,7 +29,7 @@ namespace CsdlToDiagram
             }
 
             var convertor = new PlantConverter();
-            string plant = convertor.EmitPlantDiagram(csdl, Path.GetFileName(csdlFile));
+            string plant = convertor.EmitPlantDiagram(csdl, csdlFile);
             Console.WriteLine(plant);
             if (Debugger.IsAttached)
             {

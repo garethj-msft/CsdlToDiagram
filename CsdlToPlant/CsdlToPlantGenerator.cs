@@ -1,4 +1,7 @@
-﻿namespace CsdlToPlant
+﻿using System.IO;
+using System.Xml;
+
+namespace CsdlToPlant
 {
     using System;
     using System.Collections.Generic;
@@ -20,59 +23,209 @@
         /// </summary>
         private readonly SortedDictionary<(string theNamespace, string theName), IEnumerable<string>>
             noteMap = new SortedDictionary<(string theNamespace, string theName), IEnumerable<string>>();
-                // Comparer<(string theNamespace, string theName)>.Create((o1, o2) =>
-                    //StringComparer.OrdinalIgnoreCase.Compare(o1.theNamespace, o2.theNamespace)));
 
         private readonly Dictionary<IEdmStructuredType, IList<IEdmOperation>> boundOperations =
             new Dictionary<IEdmStructuredType, IList<IEdmOperation>>();
 
         private GeneratorOptions options;
 
+        private readonly HashSet<IEdmEntityType> entitiesToEmit = new HashSet<IEdmEntityType>();
+        private readonly HashSet<IEdmComplexType> complexToEmit = new HashSet<IEdmComplexType>();
+        private readonly HashSet<IEdmEnumType> enumsToEmit = new HashSet<IEdmEnumType>();
+
+        private readonly HashSet<IEdmEntityType> emittedEntities = new HashSet<IEdmEntityType>();
+        private readonly HashSet<IEdmComplexType> emittedComplex = new HashSet<IEdmComplexType>();
+        private readonly HashSet<IEdmEnumType> emittedEnums = new HashSet<IEdmEnumType>();
+
         public void EmitPlantDiagram(string csdl, string filename, GeneratorOptions options)
         {
             this.options = options;
             var parsed = XElement.Parse(csdl);
             this.ConstructNotesLookaside(parsed);
-            this.model = CsdlReader.Parse(parsed.CreateReader());
+            this.model = this.LoadModel(filename, parsed);
             if (this.model == null)
             {
-                this.WriteLine("Failed to parse the CSDL file.");
+                return;
             }
 
             this.CalculateNamespaceUsage();
-            this.theFilename = filename;
+            this.theFilename = Path.GetFileName(filename);
             this.WriteLine(@"@startuml");
             this.WriteLine(@"skinparam classAttributeIconSize 0");
             this.WriteLine($@"title API Entity Diagram for {this.theFilename}");
             this.WriteLine("");
+
+            // This may populate the sets with types referenced in the container.
             this.EmitEntityContainer();
+
             this.WriteLine("");
             this.CollateBoundOperations();
 
-            foreach (var entity in this.FilterSkipped(this.model.SchemaElements.OfType<IEdmEntityType>()))
-            {
-                this.EmitStructuralType(entity, "entity");
-                this.EmitNavigationProperties(entity);
-                this.WriteLine("");
-            }
+            // Put top-level elements onto the processing sets.
+            this.entitiesToEmit.UnionWith(this.FilterSkipped(this.model.SchemaElements.OfType<IEdmEntityType>()));
+            this.complexToEmit.UnionWith(this.FilterSkipped(this.model.SchemaElements.OfType<IEdmComplexType>()));
+            this.enumsToEmit.UnionWith(this.FilterSkipped(this.model.SchemaElements.OfType<IEdmEnumType>()));
 
-            foreach (var complex in this.FilterSkipped(this.model.SchemaElements.OfType<IEdmComplexType>()))
+            // Keep spitting out types until nothing new has been introduced.
+            bool anyEmitted;
+            do
             {
-                this.EmitStructuralType(complex, "complexType");
-                this.WriteLine("");
-            }
+                // Any types emitted on this iteration.
+                anyEmitted = false;
 
-            foreach (var enumeration in this.FilterSkipped(this.model.SchemaElements.OfType<IEdmEnumType>()))
-            {
-                this.EmitEnumType(enumeration);
-                this.WriteLine("");
-            }
+                // Now walk the sets - these could dynamically get more added during processing so use a RemoveFirst rather than an enumerator.
+                for (var entity = this.RemoveFirst(this.entitiesToEmit);
+                    entity != null;
+                    entity = this.RemoveFirst(this.entitiesToEmit))
+                {
+                    this.EmitStructuralType(entity, "entity");
+                    this.EmitNavigationProperties(entity);
+                    this.WriteLine("");
+                    this.emittedEntities.Add(entity);
+                    anyEmitted = true;
+
+                    // Also need to emit any types derived from this type.
+                    this.AddDerivedStructuredTypes(entity);
+                }
+
+                for (var complex = this.RemoveFirst(this.complexToEmit);
+                    complex != null;
+                    complex = this.RemoveFirst(this.complexToEmit))
+                {
+                    this.EmitStructuralType(complex, "complexType");
+                    this.WriteLine("");
+                    this.emittedComplex.Add(complex);
+                    anyEmitted = true;
+
+                    // Also need to emit any types derived from this type.
+                    this.AddDerivedStructuredTypes(complex);
+                }
+
+                for (var enumeration = this.RemoveFirst(this.enumsToEmit);
+                    enumeration != null;
+                    enumeration = this.RemoveFirst(this.enumsToEmit))
+                {
+                    this.EmitEnumType(enumeration);
+                    this.WriteLine("");
+                    this.emittedEnums.Add(enumeration);
+                    anyEmitted = true;
+                }
+
+            } while (anyEmitted);
 
             this.EmitNotes();
         }
 
+        private IEdmModel LoadModel(string filename, XElement parsed)
+        {
+            IEdmModel theModel = null;
+            try
+            {
+                var directory = Path.GetDirectoryName(filename);
+                using XmlReader mainReader = parsed.CreateReader();
+                theModel = CsdlReader.Parse(mainReader, u =>
+                {
+                    if (string.IsNullOrEmpty(directory))
+                    {
+                        this.Error($"No directory to resolve referenced model.");
+                        return null;
+                    }
+
+                    // Currently only support relative paths
+                    if (u.IsAbsoluteUri)
+                    {
+                        this.Error($"Referenced model must use relative URIs.");
+                        return null;
+                    }
+
+                    var file = Path.Combine(directory, u.OriginalString);
+                    string referenceText = File.ReadAllText(file);
+                    var referenceParsed = XElement.Parse(referenceText);
+                    XmlReader referenceReader = referenceParsed.CreateReader();
+                    return referenceReader;
+                });
+            }
+            catch (EdmParseException parseException)
+            {
+                this.Error("Failed to parse the CSDL file.");
+                this.Error(string.Join(Environment.NewLine, parseException.Errors.Select(e => e.ToString())));
+                return null;
+            }
+
+            if (theModel == null)
+            {
+                this.Error("Failed to load the CSDL file.");
+            }
+
+            return theModel;
+        }
+
+        private void AddDerivedStructuredTypes(IEdmStructuredType structured)
+        {
+            foreach (var derived in this.model.FindAllDerivedTypes(structured))
+            {
+                if (derived is IEdmEntityType derivedEntity)
+                {
+                    this.AddEntityToEmit(derivedEntity);
+                }
+                else
+                {
+                    this.AddComplexToEmit(derived as IEdmComplexType);
+                }
+            }
+        }
+
+        private void AddEntityToEmit(IEdmEntityType type)
+        {
+            this.AddTypeToEmit(type, this.entitiesToEmit, this.emittedEntities);
+        }
+
+        private void AddComplexToEmit(IEdmComplexType type)
+        {
+            this.AddTypeToEmit(type, this.complexToEmit, this.emittedComplex);
+        }
+
+        private void AddEnumToEmit(IEdmEnumType type)
+        {
+            this.AddTypeToEmit(type, this.enumsToEmit, this.emittedEnums);
+        }
+
+        private void AddTypeToEmit<T>(T type, HashSet<T> toEmitCollection, HashSet<T> emittedCollection)
+            where T : IEdmSchemaType
+        {
+            var positive = this.FilterSkipped(Enumerable.Repeat(type, 1));
+            type = positive.SingleOrDefault();
+            if (type != null
+                && !emittedCollection.Contains(type)
+                && !IsUnresolved(type))
+            {
+                toEmitCollection.UnionWith(positive);
+            }
+        }
+
+        /// <summary>
+        /// Take the first item out of a HashSet
+        /// </summary>
+        private T RemoveFirst<T>(HashSet<T> collection) where T : IEdmType
+        {
+            var first = collection.FirstOrDefault();
+            if (first != null)
+            {
+                collection.Remove(first);
+            }
+            return first;
+        }
+
         private void CalculateNamespaceUsage()
         {
+            // If this model has non-normative references that will be chased down,
+            // we have to use namespaces, as we can't calculate in advance.
+            if (this.model.GetEdmReferences().Any(r => !r.Uri.IsAbsoluteUri))
+            {
+                this.usesNamespaces = true;
+                return;
+            }
+
             int count = this.model.DeclaredNamespaces.Count();
             string firstNamespace = this.model.DeclaredNamespaces.First();
             this.usesNamespaces = count > 1 ||
@@ -95,11 +248,12 @@
         {
             var props = new List<string>();
             var complexUsages = new List<string>();
+            IEdmStructuredType baseType = theType.BaseType;
             if (this.options.SkipList.Contains("entity", StringComparer.OrdinalIgnoreCase))
             {
                 if (theType is IEdmEntityType && 
-                        (theType.BaseType == null ||
-                         ((IEdmNamedElement)(theType.BaseType)).Name.Equals("entity", StringComparison.OrdinalIgnoreCase)))
+                        (baseType == null ||
+                         ((IEdmNamedElement)baseType).Name.Equals("entity", StringComparison.OrdinalIgnoreCase)))
                 {
                     // Add fake id property because everything is originally derived from Graph's 'Entity' base type which would clutter the diagram.
                     props.Add("+id: String");
@@ -137,10 +291,19 @@
 
                 props.Add($"{prefix}{exposure}{property.Name}: {typeName}{optionality}{navType}");
 
-                IEdmType propFundamental = GetFundamentalType(property.Type.Definition);
+                IEdmType propFundamental = property.Type.Definition.AsElementType();
                 if (propFundamental.TypeKind == EdmTypeKind.Complex ||
                     propFundamental.TypeKind == EdmTypeKind.Enum)
                 {
+                    if (propFundamental.TypeKind == EdmTypeKind.Complex)
+                    {
+                        this.AddComplexToEmit(propFundamental as IEdmComplexType);
+                    }
+                    else
+                    {
+                        this.AddEnumToEmit(propFundamental as IEdmEnumType);
+                    }
+
                     string basePropType = StripCollection(fullTypeName);
                     complexUsages.Add(
                         $@"{this.GetTypeName(theType)} +--> ""[{cardinalityMin}..{cardinalityMax}]"" {basePropType}: {property.Name}");
@@ -154,9 +317,17 @@
             }
 
             var extends = string.Empty;
-            if (theType.BaseType != null && !this.options.SkipList.Contains(((IEdmNamedElement)theType.BaseType).Name, StringComparer.OrdinalIgnoreCase))
+            if (baseType != null && !this.options.SkipList.Contains(((IEdmNamedElement)baseType).Name, StringComparer.OrdinalIgnoreCase))
             {
-                extends = $" extends {this.GetTypeName(theType.BaseType)}";
+                extends = $" extends {this.GetTypeName(baseType)}";
+                if (baseType is IEdmEntityType baseEntity)
+                {
+                    this.AddEntityToEmit(baseEntity);
+                }
+                else
+                {
+                    this.AddComplexToEmit(baseType as IEdmComplexType);
+                }
             }
 
             this.WriteLine(
@@ -276,7 +447,7 @@
                 this.EmitNote(note.Key.theName, note.Value);
             }
 
-            if (this.usesNamespaces)
+            if (this.usesNamespaces && this.noteMap.Any())
             {
                 this.WriteLine("}");
             }
@@ -305,8 +476,7 @@
                     continue;
                 }
 
-                IEdmType targetElement = navProp.Type.Definition.AsElementType();
-                if (targetElement.Errors().Any(e => e.ErrorCode == EdmErrorCode.BadUnresolvedEntityType))
+                if (IsUnresolved(navProp.Type.Definition))
                 {
                     continue;
                 }
@@ -318,6 +488,7 @@
                     isCollection = true;
                     entityTarget = collectionTarget.ElementType.Definition as IEdmEntityType;
                 }
+                this.AddEntityToEmit(entityTarget);
 
                 var navType = navProp.ContainsTarget ? "*" : string.Empty;
                 CalculatePropertyCardinalityText(navProp, isCollection, out var cardinalityMin, out var cardinalityMax);
@@ -337,17 +508,21 @@
             string ecName = this.StripNamespace(this.model.EntityContainer.FullName());
             foreach (var singleton in this.model.EntityContainer.Elements.OfType<IEdmSingleton>())
             {
-                var singletonTypeName = this.GetTypeName(singleton.Type);
+                IEdmEntityType entityType = singleton.EntityType();
+                var singletonTypeName = this.GetTypeName(entityType);
                 members.Add($"+{singleton.Name}: {singletonTypeName}");
                 this.WriteLine($@"{ecName} .. ""1..1"" {singletonTypeName}: {singleton.Name}");
+                this.AddEntityToEmit(entityType);
             }
 
             foreach (var entitySet in this.model.EntityContainer.Elements.OfType<IEdmEntitySet>())
             {
-                var entitySetTypeName = this.GetTypeName(entitySet.EntityType());
+                IEdmEntityType entityType = entitySet.EntityType();
+                var entitySetTypeName = this.GetTypeName(entityType);
                 members.Add($"+{entitySet.Name}: {entitySetTypeName}");
                 this.WriteLine(
                     $@"{ecName} .. ""0..*"" {StripCollection(entitySetTypeName)}: {entitySet.Name}");
+                this.AddEntityToEmit(entityType);
             }
 
             this.WriteLine($"class {ecName} <<(S,white)entityContainer>> #LightPink {{");
@@ -376,6 +551,22 @@
                     list.Add(operation);
                 }
             }
+        }
+        private static bool IsUnresolved(IEdmType type)
+        {
+            type = type.AsElementType();
+            var named = type as IEdmNamedElement;
+            if (named == null)
+            {
+                return true;
+            }
+
+            string name = named.Name;
+            return type.Errors().Any(e =>
+                (e.ErrorCode == EdmErrorCode.BadUnresolvedEntityType
+                || e.ErrorCode == EdmErrorCode.BadUnresolvedComplexType
+                || e.ErrorCode == EdmErrorCode.BadUnresolvedEnumType) && 
+                e.ErrorMessage.Contains(name));
         }
 
         private static string StripCollection(string name)
@@ -472,7 +663,5 @@
                     return string.Empty;
             }
         }
-
-        private static IEdmType GetFundamentalType(IEdmType theType) => theType is IEdmCollectionType collection ? collection.ElementType.Definition : theType;
     }
 }
