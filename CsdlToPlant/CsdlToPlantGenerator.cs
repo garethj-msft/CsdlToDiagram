@@ -141,6 +141,7 @@ namespace CsdlToPlant
                     var file = Path.Combine(directory, u.OriginalString);
                     string referenceText = File.ReadAllText(file);
                     var referenceParsed = XElement.Parse(referenceText);
+                    this.ConstructNotesLookaside(referenceParsed);
                     XmlReader referenceReader = referenceParsed.CreateReader();
                     return referenceReader;
                 });
