@@ -536,8 +536,15 @@ namespace CsdlToPlant
 
         private void CollateBoundOperations()
         {
+            List<IEdmOperation> allOperations = new List<IEdmOperation>();
+            allOperations.AddRange(this.model.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound));
+            foreach (IEdmModel refModel in this.model.ReferencedModels)
+            {
+                allOperations.AddRange(refModel.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound));
+            }
+
             // Collate the bound actions and functions against their bound elements.
-            foreach (var operation in this.model.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound))
+            foreach (var operation in allOperations)
             {
                 // By spec definition, first parameter is the binding parameter.
                 if ((operation?.Parameters?.FirstOrDefault()?.Type?.Definition) is IEdmStructuredType
