@@ -7,6 +7,11 @@ Available on nuget as a tool: `CsdlToDiagram`
 CsdlToDiagram <csdlFile>
 ```
 
+## Generate an SVG diagram to the console.
+```
+CsdlToDiagram <csdlFile> -s
+```
+
 ## Library CsdlToPlant
 .Net Standard 2.1 library to create PlantUML text from a CSDL file.
 Available on nuget as CsdlDiagrams.Net.
