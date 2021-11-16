@@ -382,7 +382,7 @@ namespace CsdlToPlant
 
         private void ConstructNotesLookaside(XElement root)
         {
-            IEnumerable<string> extractComments(IEnumerable<XNode> childNodes)
+            static IEnumerable<string> extractComments(IEnumerable<XNode> childNodes)
             {
                 return from c in childNodes.OfType<XComment>()
                     where c.Value.Trim().StartsWith("Note:", StringComparison.OrdinalIgnoreCase)
@@ -536,8 +536,15 @@ namespace CsdlToPlant
 
         private void CollateBoundOperations()
         {
+            List<IEdmOperation> allOperations = new List<IEdmOperation>();
+            allOperations.AddRange(this.model.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound));
+            foreach (IEdmModel refModel in this.model.ReferencedModels)
+            {
+                allOperations.AddRange(refModel.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound));
+            }
+
             // Collate the bound actions and functions against their bound elements.
-            foreach (var operation in this.model.SchemaElements.OfType<IEdmOperation>().Where(o => o.IsBound))
+            foreach (var operation in allOperations)
             {
                 // By spec definition, first parameter is the binding parameter.
                 if ((operation?.Parameters?.FirstOrDefault()?.Type?.Definition) is IEdmStructuredType
@@ -556,8 +563,7 @@ namespace CsdlToPlant
         private static bool IsUnresolved(IEdmType type)
         {
             type = type.AsElementType();
-            var named = type as IEdmNamedElement;
-            if (named == null)
+            if (!(type is IEdmNamedElement named))
             {
                 return true;
             }
@@ -575,7 +581,7 @@ namespace CsdlToPlant
             if (name.Contains(CollectionPrefix))
             {
                 name = name.Replace(CollectionPrefix, string.Empty);
-                name = name.Substring(0, name.Length - 1);
+                name = name[0..^1];
             }
 
             return name;
@@ -654,15 +660,12 @@ namespace CsdlToPlant
 
         private static string GetTypeColor(IEdmType theType)
         {
-            switch (theType)
+            return theType switch
             {
-                case IEdmComplexType _:
-                    return "#Skyblue";
-                case IEdmEntityType _:
-                    return "#PaleGreen";
-                default:
-                    return string.Empty;
-            }
+                IEdmComplexType _ => "#Skyblue",
+                IEdmEntityType _ => "#PaleGreen",
+                _ => string.Empty,
+            };
         }
     }
 }

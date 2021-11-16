@@ -10,7 +10,7 @@ namespace CsdlToPlant
 
         public string EmitPlantDiagram(string csdlContent, string csdlFilename, GeneratorOptions options = null)
         {
-            options = options ?? GeneratorOptions.DefaultGeneratorOptions;
+            options ??= GeneratorOptions.DefaultGeneratorOptions;
 
             this.generator.EmitPlantDiagram(csdlContent, csdlFilename, options);
             if (this.generator.Errors.Any(e => !e.IsWarning))

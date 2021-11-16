@@ -4,21 +4,30 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>CsdlToDiagram.Program</StartupObject>
-    <Version>0.13.3</Version>
+    <Version>0.14.0</Version>
     <Authors>Gareth Jones</Authors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>CsdlToDiagram</PackageId>
     <PackAsTool>true</PackAsTool>
     <Title>Generates UML diagrams for OData CSDL files.</Title>
     <Description>Generates UML diagrams for OData CSDL files.</Description>
-    <Copyright>2020 Microsoft Corporation</Copyright>
+    <Copyright>2021 Microsoft Corporation</Copyright>
     <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageType>DotNetCliTool</PackageType>
-    <PackageOutputPath Condition="'$(Configuration)' == 'Release'">\CsdlToDiagram</PackageOutputPath>
+    <PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  <Pack>True</Pack>
+      <PackagePath></PackagePath>
+	</Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CsdlToPlant\CsdlToPlant.csproj" />
@@ -29,11 +38,9 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>assets/README.md</PackagePath>
-    </None>
   </ItemGroup>
 
-
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+  </ItemGroup>
 </Project>
