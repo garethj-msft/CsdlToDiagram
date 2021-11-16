@@ -39,5 +39,11 @@
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
   </ItemGroup>
 
+	<Target Name="TestMessage" AfterTargets="Build" >
+
+		<Message Text="Environment variables set to $(GITHUB_ACTIONS)" Importance="high"/>
+
+	</Target>
+
 
 </Project>
