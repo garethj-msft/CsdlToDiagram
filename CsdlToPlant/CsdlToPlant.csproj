@@ -15,8 +15,8 @@
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageOutputPath Condition="'$(Configuration)' == 'Release'">\CsdlToDiagram</PackageOutputPath>
-    <LangVersion>8.0</LangVersion>
+	<PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
+	<LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,5 +34,10 @@
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
+
+
+	<Target Name="TestMessage" BeforeTargets="Build" >
+		<Message Text="Environment variables set to $(GITHUB_ACTIONS)" Importance="high"/>
+	</Target>
 
 </Project>
