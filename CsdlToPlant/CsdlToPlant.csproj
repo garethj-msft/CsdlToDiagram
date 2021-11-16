@@ -34,10 +34,4 @@
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
-
-
-	<Target Name="TestMessage" BeforeTargets="Build" >
-		<Message Text="Environment variables set to $(GITHUB_ACTIONS)" Importance="high"/>
-	</Target>
-
 </Project>
