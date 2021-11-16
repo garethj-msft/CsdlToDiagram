@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsdlToDiagram", "CsdlToDiagram\CsdlToDiagram.csproj", "{35979C97-3ECF-45B7-87D0-043B1AF1CDDA}"
 EndProject
@@ -9,12 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsdlToPlant", "CsdlToPlant\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{6D6ED9E6-A9B1-4B72-A85C-C27CBE7892C0}"
 	ProjectSection(SolutionItems) = preProject
-		GITHUB_DONOTEDIT.txt = GITHUB_DONOTEDIT.txt
 		License.txt = License.txt
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsdlToPlant.Tests", "CsdlToPlant.Tests\CsdlToPlant.Tests.csproj", "{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsdlToPlant.Tests", "CsdlToPlant.Tests\CsdlToPlant.Tests.csproj", "{7F40FD29-84D4-4B01-917E-69FBC8D5B51E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
