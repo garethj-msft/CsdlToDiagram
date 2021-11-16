@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageType>DotNetCliTool</PackageType>
-    <PackageOutputPath Condition="'$(Configuration)' == 'Release'">\CsdlToDiagram</PackageOutputPath>
+    <PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
