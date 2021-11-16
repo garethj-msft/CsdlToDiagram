@@ -5,6 +5,7 @@ namespace CsdlToPlant.Tests
 {
     public static class StringAssertExtensions
     {
+#pragma warning disable IDE0060 // Remove unused parameter - stadard StringAssert extension mechanism.
         public static void ContainsCountOf(this StringAssert assert, string value, int count, string substring)
         {
             string processedSubstring = Regex.Escape(substring);
@@ -20,5 +21,6 @@ namespace CsdlToPlant.Tests
             string pattern = string.Join("\r\n", patterns);
             StringAssert.Matches(value, new Regex(pattern, RegexOptions.Multiline));
         }
+#pragma warning restore IDE0060 // Remove unused parameter
     }
 }
