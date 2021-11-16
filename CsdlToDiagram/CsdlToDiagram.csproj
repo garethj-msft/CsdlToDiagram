@@ -14,11 +14,20 @@
     <Copyright>2021 Microsoft Corporation</Copyright>
     <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageType>DotNetCliTool</PackageType>
     <PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  <Pack>True</Pack>
+      <PackagePath></PackagePath>
+	</Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CsdlToPlant\CsdlToPlant.csproj" />
@@ -28,10 +37,6 @@
     <None Include="..\License.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
-    </None>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>assets/README.md</PackagePath>
     </None>
   </ItemGroup>
 
