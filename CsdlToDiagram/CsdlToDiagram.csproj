@@ -2,10 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	<LangVersion>10.0</LangVersion>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>CsdlToDiagram.Program</StartupObject>
-    <Version>0.14.1</Version>
+    <Version>0.14.0</Version>
     <Authors>Gareth Jones</Authors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>CsdlToDiagram</PackageId>
@@ -20,18 +19,6 @@
     <RepositoryType>git</RepositoryType>
     <PackageType>DotNetCliTool</PackageType>
     <PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
-    <Nullable>enable</Nullable>
-    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

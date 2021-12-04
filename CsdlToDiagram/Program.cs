@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using CommandLine;
@@ -23,56 +22,26 @@ namespace CsdlToDiagram
 
         private static async Task<int> RunCommandAsync(ProgramOptions args)
         {
-            try
+            var csdlFile = args.CsdlFile;
+            string csdl = File.ReadAllText(csdlFile);
+            var root = XElement.Parse(csdl);
+            if (root.Name.LocalName.Equals("schema", StringComparison.OrdinalIgnoreCase))
             {
-                var csdlFile = args.CsdlFile!;
-                string csdl = File.ReadAllText(csdlFile);
-                var root = XElement.Parse(csdl);
-                if (root.Name.LocalName.Equals("schema", StringComparison.OrdinalIgnoreCase))
-                {
-                    // This is an unwrapped CSDL file - user needs to top and tail it with standard EDMX nodes for the CSDL reader.
-                    Console.WriteLine("CSDL file is missing standard Edmx and Edmx:DataServices wrapper nodes.");
-                    return 1;
-                }
-
-                var convertor = new PlantConverter();
-                string plantUml = convertor.EmitPlantDiagram(csdl, csdlFile);
-                if (!args.SvgModel)
-                {
-                    if (args.Output == null)
-                    {
-                        Console.WriteLine(plantUml);
-                    }
-                    else
-                    {
-                        await File.WriteAllTextAsync(args.Output, plantUml, System.Text.Encoding.UTF8);
-                    }
-                }
-                else
-                {
-                    byte[] svgBytesInUtf8;
-                    if (args.ServerUrl == null)
-                    {
-                        svgBytesInUtf8 = await RenderSvg.RenderSvgDiagram(plantUml);
-                    }
-                    else
-                    {
-                        svgBytesInUtf8 = await RenderSvg.RenderSvgDiagram(plantUml, args.ServerUrl);
-                    }
-
-                    if (args.Output == null)
-                    {
-                        Console.WriteLine(UTF8Encoding.UTF8.GetString(svgBytesInUtf8));
-                    }
-                    else
-                    {
-                        await File.WriteAllBytesAsync(args.Output, svgBytesInUtf8);
-                    }
-                }
+                // This is an unwrapped CSDL file - user needs to top and tail it with standard EDMX nodes for the CSDL reader.
+                Console.WriteLine("CSDL file is missing standard Edmx and Edmx:DataServices wrapper nodes.");
+                return 1;
             }
-            catch (Exception ex)
+
+            var convertor = new PlantConverter();
+            string output = convertor.EmitPlantDiagram(csdl, csdlFile);
+            if (!args.SvgModel)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(output);
+            }
+            else
+            {
+                output = await RenderSvg.RenderSvgDiagram(output);
+                Console.WriteLine(output);
             }
 
             if (Debugger.IsAttached)

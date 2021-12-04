@@ -12,12 +12,14 @@ CsdlToDiagram <csdlFile>
 CsdlToDiagram <csdlFile> -s
 ```
 
-## Generate an SVG diagram to a file
-```
-CsdlToDiagram <csdlFile> -s -o <outFile>
-```
+## Library CsdlToPlant
+.Net Standard 2.1 library to create PlantUML text from a CSDL file.
+Available on nuget as CsdlDiagrams.Net.
 
-## Generate an SVG diagram to a file using a specific PlantUML rendering server
-```
-CsdlToDiagram <csdlFile> -s -o <outFile> -u https://www.plantuml.com/plantuml
+Usage:
+```cs
+    var csdlFile = "<somefilename>";
+    var csdl = File.ReadAllText(csdlFile);
+    var converter = new PlantConverter();
+    var plantUml = converter.EmitPlantDiagram(generator.csdl, csdlFilename);
 ```

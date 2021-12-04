@@ -11,13 +11,3 @@ CsdlToDiagram <csdlFile>
 ```
 CsdlToDiagram <csdlFile> -s
 ```
-
-## Generate an SVG diagram to a file
-```
-CsdlToDiagram <csdlFile> -s -o <outFile>
-```
-
-## Generate an SVG diagram to a file using a specific PlantUML rendering server
-```
-CsdlToDiagram <csdlFile> -s -o <outFile> -u https://www.plantuml.com/plantuml
-```
