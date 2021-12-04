@@ -1,3 +1,4 @@
+using System;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,7 +19,7 @@ namespace CsdlToPlant.Tests
 
         public static void MatchesLines(this StringAssert assert, string value, params string[] patterns)
         {
-            string pattern = string.Join("\r\n", patterns);
+            string pattern = string.Join(Environment.NewLine, patterns);
             StringAssert.Matches(value, new Regex(pattern, RegexOptions.Multiline));
         }
 #pragma warning restore IDE0060 // Remove unused parameter
