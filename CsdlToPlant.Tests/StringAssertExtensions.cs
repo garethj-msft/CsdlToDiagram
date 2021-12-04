@@ -13,7 +13,7 @@ namespace CsdlToPlant.Tests
             int found = Regex.Matches(value, processedSubstring).Count;
             if (found != count)
             {
-                throw new AssertFailedException($"Unexpected number of instances of '{substring}' found in '{value}'\r\nExpected {count}, actual {found}.");
+                throw new AssertFailedException($"Unexpected number of instances of '{substring}' found in '{value}'{Environment.NewLine}Expected {count}, actual {found}.");
             }
         }
 
