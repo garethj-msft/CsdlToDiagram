@@ -40,7 +40,7 @@ namespace CsdlToPlant.Tests
             string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
 
             StringAssert.Matches(plant, new Regex(@"^class entityName", RegexOptions.Multiline));
-            StringAssert.That.MatchesLines(plant, @"^note top of entityName", @"Note: First note.", @"end note\r\n$");
+            StringAssert.That.MatchesLines(plant, @"note top of entityName", @"Note: First note.", @"end note\r\n");
             StringAssert.That.ContainsCountOf(plant, 1, "note top of");
             StringAssert.That.ContainsCountOf(plant, 1, "First note.");
         }
@@ -56,7 +56,7 @@ namespace CsdlToPlant.Tests
             string plant = convertor.EmitPlantDiagram(csdl, @"c:\model.csdl");
 
             StringAssert.Contains(plant, @"class entityName");
-            StringAssert.That.MatchesLines(plant, @"^note as RootNoteR1", @"Note: Root note.", @"end note\r\n$");
+            StringAssert.That.MatchesLines(plant, @"note as RootNoteR1", @"Note: Root note.", @"end note\r\n");
         }
 
     }

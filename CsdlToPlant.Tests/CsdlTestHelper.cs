@@ -30,7 +30,7 @@ namespace CsdlToPlant.Tests
 
         public static string CreateEntity(string entityName, string content = null)
         {
-            return CreateEntity(entityName, new KeyValuePair<string, string>[0], content);
+            return CreateEntity(entityName, Array.Empty<KeyValuePair<string, string>>(), content);
         }
 
         public static string FormCsdl(string theNamespace, string content)
