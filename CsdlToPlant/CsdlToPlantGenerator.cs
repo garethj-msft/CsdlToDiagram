@@ -114,6 +114,7 @@ namespace CsdlToPlant
             } while (anyEmitted);
 
             this.EmitNotes();
+            this.WriteLine(@"@enduml");
         }
 
         private IEdmModel LoadModel(string filename, XElement parsed)
@@ -496,6 +497,8 @@ namespace CsdlToPlant
                 this.WriteLine(
                     $@"{this.GetTypeName(entity)} {navType}--> ""{cardinalityMin}..{cardinalityMax}"" {this.GetTypeName(entityTarget)}: {navProp.Name}");
             }
+
+            // TODO: Emit a (custom?) nav line for types refered to in operation parameters.
         }
 
         private void EmitEntityContainer()

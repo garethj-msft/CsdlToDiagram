@@ -12,6 +12,8 @@ namespace CsdlToDiagram
 {
     internal static class RenderSvg
     {
+        private const string defaultServerBase = "https://www.plantuml.com/plantuml";
+
         /// <summary>
         /// Render an Svg diagram using public PlantUML server by default.
         /// </summary>
@@ -19,18 +21,23 @@ namespace CsdlToDiagram
         /// <param name="urlBase">Base url of platuml renderer to use.</param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public static async Task<string> RenderSvgDiagram(string plantUml, string urlBase = "https://www.plantuml.com/plantuml")
+        public static async ValueTask<byte[]> RenderSvgDiagram(string plantUml, string? urlBase = null)
         {
-            string encodedDiagram = CreateEncodedDiagram(plantUml);
             using var client = new HttpClient();
-            string url = $"{urlBase}/svg/{encodedDiagram}";
+            string url = $"{urlBase ?? defaultServerBase}/svg";
+            HttpResponseMessage response;
 
-            HttpResponseMessage response = await client.GetAsync(url);
-            if (response.StatusCode == HttpStatusCode.Forbidden)
+            // The default public server does not support POSTing, so we have to fall back to encoded GET
+            if (urlBase == null)
             {
-                // Retry once after delay.
-                await Task.Delay(2000);
-                response = await client.GetAsync(url);
+                string encodedDiagram = CreateEncodedDiagram(plantUml);
+                url += $"/{encodedDiagram}";
+                response = await SendWithRetry(() => client.GetAsync(url));
+            }
+            else // Assumption is that explicitly-specified server has been configured to accept POST.
+            {
+                var content = new StringContent(plantUml);
+                response = await SendWithRetry(() => client.PostAsync(url, content));
             }
 
             if (response.StatusCode != HttpStatusCode.OK)
@@ -40,9 +47,23 @@ namespace CsdlToDiagram
             }
             else
             {
-                return await response.Content.ReadAsStringAsync();
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+
+            static async Task<HttpResponseMessage> SendWithRetry(Func<Task<HttpResponseMessage>> task)
+            {
+                HttpResponseMessage response = await task();
+                if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    // Retry once after delay.
+                    await Task.Delay(2000);
+                    response = await task();
+                }
+
+                return response;
             }
         }
+
         private static string CreateEncodedDiagram(string s)
         {
             var utf8 = Encoding.UTF8.GetBytes(s);
