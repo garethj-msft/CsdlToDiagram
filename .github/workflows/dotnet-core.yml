@@ -25,6 +25,8 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --configuration Release --no-restore
     - name: Setup NuGet.exe for use with actions
       uses: NuGet/setup-nuget@v1.0.2
       with:
