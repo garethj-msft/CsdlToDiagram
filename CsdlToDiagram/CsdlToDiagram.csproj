@@ -12,7 +12,7 @@
     <PackAsTool>true</PackAsTool>
     <Title>Generates UML diagrams for OData CSDL files.</Title>
     <Description>Generates UML diagrams for OData CSDL files.</Description>
-    <Copyright>2021 Microsoft Corporation</Copyright>
+    <Copyright>2025 Microsoft Corporation</Copyright>
     <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
