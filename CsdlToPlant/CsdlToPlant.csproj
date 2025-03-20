@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Version>0.13.4</Version>
     <Authors>Gareth Jones</Authors>
     <Company>Microsoft</Company>
     <Product>Csdl Diagrams</Product>
     <PackageId>CsdlDiagrams.Net</PackageId>
-    <Description>.Net standard 2.0 library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
-    <Copyright>(C) 2020 Microsoft Corporation.</Copyright>
+    <Description>.Net 8 library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
+    <Copyright>(C) 2025 Microsoft Corporation.</Copyright>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <Title>CsdlDiagrams.Net</Title>
     <PackageProjectUrl>https://github.com/garethj-msft/CsdlToDiagram</PackageProjectUrl>
@@ -20,8 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.OData.Edm" Version="7.8.1" />
-    <PackageReference Include="System.Text.Json" Version="4.7.2" />
+    <PackageReference Include="Microsoft.OData.Edm" Version="7.21.6" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>
