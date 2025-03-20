@@ -19,7 +19,7 @@
     <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageType>DotNetCliTool</PackageType>
-    <PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
+    <PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">..\PackageOut</PackageOutputPath>
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
   </PropertyGroup>
@@ -36,11 +36,13 @@
 
   <ItemGroup>
     <Content Include="README.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  <Pack>True</Pack>
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<Pack>True</Pack>
       <PackagePath></PackagePath>
 	</Content>
   </ItemGroup>
+
+  
 
   <ItemGroup>
     <ProjectReference Include="..\CsdlToPlant\CsdlToPlant.csproj" />

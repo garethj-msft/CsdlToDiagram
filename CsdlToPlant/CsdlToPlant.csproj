@@ -1,37 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Version>0.15.0</Version>
-    <Authors>Gareth Jones</Authors>
-    <Company>Microsoft</Company>
-    <Product>Csdl Diagrams</Product>
-    <PackageId>CsdlDiagrams.Net</PackageId>
-    <Description>.Net 8 library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
-    <Copyright>(C) 2025 Microsoft Corporation.</Copyright>
-    <PackageLicenseFile>License.txt</PackageLicenseFile>
-    <Title>CsdlDiagrams.Net</Title>
-    <PackageProjectUrl>https://github.com/garethj-msft/CsdlToDiagram</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">\CsdlToDiagram</PackageOutputPath>
-	<LangVersion>8.0</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Version>0.15.0</Version>
+		<Authors>Gareth Jones</Authors>
+		<Company>Microsoft</Company>
+		<Product>Csdl Diagrams</Product>
+		<PackageId>CsdlDiagrams.Net</PackageId>
+		<Description>.Net 8 library to generate diagram source files (such as PlantUml) from OData CSDL files.</Description>
+		<Copyright>(C) 2025 Microsoft Corporation.</Copyright>
+		<PackageLicenseFile>License.txt</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<Title>CsdlDiagrams.Net</Title>
+		<PackageProjectUrl>https://github.com/garethj-msft/CsdlToDiagram</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/garethj-msft/CsdlToDiagram</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageOutputPath Condition="'$(Configuration)' == 'Release' And '$(GITHUB_ACTIONS)' != 'true'">..\PackageOut</PackageOutputPath>
+		<LangVersion>8.0</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.OData.Edm" Version="7.21.6" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.OData.Edm" Version="7.21.6" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\License.txt">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\License.txt">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<Content Include="README.md">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</Content>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
+
+
+	<ItemGroup>
+		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+	</ItemGroup>
 </Project>
